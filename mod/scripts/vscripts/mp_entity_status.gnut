@@ -1,0 +1,570 @@
+///
+///	THIS MOD IS DESIGNED FOR FRONTIER-DEFENSE MODE IN TITANFALL2.
+/// DO NOT USE THIS IN OTHER GAMEMODES. I JUST PUSHED AS FAR AS I CAN ON THIS.
+///
+///
+
+
+
+
+untyped
+global function InitMpEntityStatus
+
+// DESIGNED MAX FOR 8 PLAYERS MATCH. ITS POSSIBLE TO EXTEED TO 8+ IF YOU WANT.
+const int maxSlot = 8
+const bool isDev = true
+
+table < string, int > titanKit2Table = {
+	[ "pas_ion_tripwire" ]					= ePassives.PAS_ION_TRIPWIRE,
+	[ "pas_ion_vortex" ]					= ePassives.PAS_ION_VORTEX,
+	[ "pas_ion_lasercannon" ]				= ePassives.PAS_ION_LASERCANNON,
+	[ "pas_ion_weapon_ads" ]				= ePassives.PAS_ION_WEAPON_ADS,
+
+	[ "pas_tone_rockets" ]					= ePassives.PAS_TONE_ROCKETS,
+	[ "pas_tone_sonar" ]					= ePassives.PAS_TONE_SONAR,
+	[ "pas_tone_wall" ]						= ePassives.PAS_TONE_WALL,
+	[ "pas_tone_burst" ]					= ePassives.PAS_TONE_BURST,
+
+	[ "pas_ronin_arcwave" ]					= ePassives.PAS_RONIN_ARCWAVE,
+	[ "pas_ronin_phase" ]					= ePassives.PAS_RONIN_PHASE,
+	[ "pas_ronin_swordcore" ]				= ePassives.PAS_RONIN_SWORDCORE,
+	[ "pas_ronin_autoshift" ]				= ePassives.PAS_RONIN_AUTOSHIFT,
+
+	[ "pas_northstar_cluster" ]				= ePassives.PAS_NORTHSTAR_CLUSTER,
+	[ "pas_northstar_trap" ]				= ePassives.PAS_NORTHSTAR_TRAP,
+	[ "pas_northstar_flightcore" ]			= ePassives.PAS_NORTHSTAR_FLIGHTCORE,
+	[ "pas_northstar_optics" ]				= ePassives.PAS_NORTHSTAR_OPTICS,
+
+	[ "pas_scorch_firewall" ]				= ePassives.PAS_SCORCH_FIREWALL,
+	[ "pas_scorch_shield" ]					= ePassives.PAS_SCORCH_SHIELD,
+	[ "pas_scorch_selfdmg" ]				= ePassives.PAS_SCORCH_SELFDMG,
+	[ "pas_scorch_flamecore" ]				= ePassives.PAS_SCORCH_FLAMECORE,
+
+	[ "pas_legion_spinup" ]					= ePassives.PAS_LEGION_SPINUP,
+	[ "pas_legion_gunshield" ]				= ePassives.PAS_LEGION_GUNSHIELD,
+	[ "pas_legion_smartcore" ]				= ePassives.PAS_LEGION_SMARTCORE,
+	[ "pas_legion_siege" ]					= ePassives.PAS_LEGION_SIEGE,
+	[ "pas_legion_chargeshot" ]				= ePassives.PAS_LEGION_CHARGESHOT,
+
+	[ "pas_vanguard_coremeter" ]			= ePassives.PAS_VANGUARD_COREMETER,
+	[ "pas_vanguard_shield" ]				= ePassives.PAS_VANGUARD_SHIELD,
+	[ "pas_vanguard_rearm" ]				= ePassives.PAS_VANGUARD_REARM,
+	[ "pas_vanguard_doom" ]					= ePassives.PAS_VANGUARD_DOOM,
+}
+
+table < string, int > vanguardUpgrades = {
+	[ "pas_vanguard_core1" ]					= ePassives.PAS_VANGUARD_CORE1,
+	[ "pas_vanguard_core2" ]					= ePassives.PAS_VANGUARD_CORE2,
+	[ "pas_vanguard_core3" ]					= ePassives.PAS_VANGUARD_CORE3,
+	[ "pas_vanguard_core4" ]					= ePassives.PAS_VANGUARD_CORE4,
+	[ "pas_vanguard_core5" ]					= ePassives.PAS_VANGUARD_CORE5,
+	[ "pas_vanguard_core6" ]					= ePassives.PAS_VANGUARD_CORE6,
+	[ "pas_vanguard_core7" ]					= ePassives.PAS_VANGUARD_CORE7,
+	[ "pas_vanguard_core8" ]					= ePassives.PAS_VANGUARD_CORE8,
+	[ "pas_vanguard_core9" ]					= ePassives.PAS_VANGUARD_CORE9,
+
+}
+
+
+
+
+
+struct 
+{
+	var entityStatus
+	table playerColor
+} file
+
+
+
+
+void function InitMpEntityStatus() {
+	AddCallback_GameStateEnter( eGameState.Prematch, HideEntityStatus )
+	AddCallback_GameStateEnter( eGameState.WinnerDetermined, HideEntityStatus )
+	AddCallback_GameStateEnter( eGameState.Epilogue, HideEntityStatus )
+	AddScoreboardShowCallback( HideEntityStatus )
+    AddScoreboardHideCallback( ShowEntityStatus )
+
+
+	thread Monitor()
+}
+
+void function HideEntityStatus()
+{
+	if (file.entityStatus != null) 
+		file.entityStatus.Hide()
+}
+
+void function ShowEntityStatus()
+{
+	if (file.entityStatus != null) 
+		file.entityStatus.Show()
+}
+
+void function Monitor() {
+	WaitFrame()
+	
+
+	// if ( GameRules_GetGameMode() != FD ){
+	// 	return
+	// }
+	file.entityStatus = HudElement("EntityStatus")
+	while (true) {
+		WaitFrame()
+
+		// if ( IsLobby() || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
+		// {
+		// 	if (file.entityStatus != null) 
+		// 		file.entityStatus.Hide()
+		// 	continue
+		// }
+			
+		for (int i = 0; i < maxSlot; i++) {
+			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
+			panel.Hide()
+		}
+
+		file.entityStatus.Show()
+		int i = 0
+		foreach (entity ent in GetTargets()) {
+			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
+			panel.Show()
+			SetBarValues(i, ent)
+
+			i++
+			if (i >= 8) {
+				break
+			}
+		}
+	}
+}
+
+array<entity> function GetTargets() {
+	// return [GetLocalClientPlayer()]
+	return GetPlayerArray()
+}
+
+
+
+asset function PrepareIconImageAsset(entity player) {
+	asset icon = $"rui/menu/dpad_comms/emoji/skull";
+
+	if (IsValid(player) && IsAlive(player) && player.IsPlayer()) {
+		if(player.IsTitan())
+		 	icon = GetIconForTitanClass(GetTitanCharacterName(GetSoulFromPlayer(player).GetTitan()))
+		else if (player.GetOffhandWeapons().len() > 1 && IsValid(player.GetOffhandWeapons()[1]))
+			icon = GetWeaponInfoFileKeyFieldAsset_Global( player.GetOffhandWeapons()[1].GetWeaponClassName(), "hud_icon" )
+	}
+
+	return icon
+}
+
+// ported from SetStatsBarValues
+void function SetBarValues(int panelIndex, entity ent)
+{
+	// if ( GameRules_GetGameMode() != FD ){
+	// 	return
+	// }
+
+
+
+	string titleString = ent.IsPlayer() ? ent.GetPlayerName() : ent.GetTargetName()
+	var startValue = 0
+	var endValue = ent.GetMaxHealth()
+	var currentValue = ent.GetHealth().tofloat()
+	asset image = PrepareIconImageAsset(ent)
+
+
+	Assert( endValue > startValue )
+	Assert( currentValue >= startValue && currentValue <= endValue )
+
+	// Get nested panel
+	var entityBar = HudElement("EntityStatusBar" + panelIndex, file.entityStatus)
+
+
+
+	// Avatar
+	var avatar = Hud_GetChild( entityBar, "EntityImage" )
+	RuiSetImage( Hud_GetRui(avatar), "basicImage", image)
+	RuiSetFloat( Hud_GetRui(avatar), "basicImageAlpha", 1 )
+
+
+	// autotian
+	Hud_GetChild( entityBar, "EntityImageAutotitan" ).Hide()
+	if (IsValid(ent.GetPetTitan()))
+	{
+		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageAutotitan" )), "basicImage",
+		GetIconForTitanClass(GetTitanCharacterName(ent.GetPetTitan())))
+		Hud_GetChild( entityBar, "EntityImageAutotitan" ).Show()
+		//  printt(titleString, "GetPetTitan", GetIconForTitanClass(GetTitanCharacterName(ent.GetPetTitan())))
+	}
+
+	// Thats bad. Core with bg is not that awesome.
+	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", image)
+	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
+	// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.3 )
+
+
+	// avatar bg
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImage", $"vgui/hud/white")
+	RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageColor", <0,0,0> )
+	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", 0.3 )
+
+
+	
+	// Change the bg color of avatar due to titan class
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImage", $"vgui/hud/white")
+	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageAlpha", 0.6 )
+	// thread TrySetBgColor(entityBar, ent)
+
+	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageColor", < FRIENDLY_R, FRIENDLY_G, FRIENDLY_B> )
+	// if (IsPartyMember(ent)) 
+	// 	RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageColor", < PARTY_R, PARTY_G, PARTY_B> )
+	// if (ent.GetPlayerName() == GetLocalClientPlayer().GetPlayerName()
+	//  && ent.GetPlayerName() == GetLocalViewPlayer().GetPlayerName()) 
+	//  RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageColor", < LOCAL_R, LOCAL_G, LOCAL_B> )
+	
+	// Update title
+	var title = Hud_GetChild( entityBar, "EntityTitle" )
+	Hud_SetText( title, titleString )
+	Hud_SetColor( title, 255 , 248, 220, 255 )
+
+	// LOCAL/PARTY
+	if (IsPartyMember(ent)) 
+		Hud_SetColor(title, PARTY_R, PARTY_G, PARTY_B, 255)
+	if (ent.GetPlayerName() == GetLocalClientPlayer().GetPlayerName()
+	 && ent.GetPlayerName() == GetLocalViewPlayer().GetPlayerName()) 
+		Hud_SetColor( title, LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+	
+
+
+	// Update bar progress
+	var frac = (currentValue - startValue) / endValue;
+	// printt("start", startValue, "end", endValue, "current", currentValue, "frac", frac)
+
+
+	var barFill = Hud_GetChild( entityBar, "BarFill" )
+	Hud_SetScaleX( barFill, frac )
+	Hud_SetColor( barFill, FRIENDLY_R, FRIENDLY_G, FRIENDLY_B, 255 )
+
+	if (ent.IsTitan() && GetDoomedState( ent )) 
+		Hud_SetColor( barFill, BURN_R, BURN_G, BURN_B, 255 )
+
+	var barFillShadow = Hud_GetChild( entityBar, "BarFillShadow" )
+
+
+	Hud_SetText( Hud_GetChild( entityBar, "BarDesc" ), format("%.0f/%.0f", currentValue, endValue) )
+	// Hud_SetColor( Hud_GetChild( entityBar, "BarDesc" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+
+	ResetVanguardIcons(entityBar, ent)
+
+	if (IsValid(ent) && ent.IsPlayer() && IsAlive(ent) && GameRules_GetGameMode() == FD) {
+		int numShieldBoosts = ent.GetPlayerNetInt( "numHarvesterShieldBoost" )
+		int numCoreOverload = ent.GetPlayerNetInt( "numSuperRodeoGrenades" )
+		int money = ent.GetPlayerNetInt( "FD_money256" ) * 256 + ent.GetPlayerNetInt( "FD_money256" )
+		
+		if ( numShieldBoosts > 0 )
+		{
+			RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "ShieldBoost" )), "basicImage",$"rui/menu/boosts/boost_icon_harvester_shield")
+			Hud_GetChild( entityBar, "ShieldBoost" ).Show()
+		}
+		else
+			Hud_GetChild( entityBar, "ShieldBoost" ).Hide()
+
+		if ( numCoreOverload > 0 )
+		{
+			RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Nuclear" )), "basicImage", $"rui/menu/boosts/boost_icon_core_overload" )
+			Hud_GetChild( entityBar, "Nuclear" ).Show()
+		}
+		else
+			Hud_GetChild( entityBar, "Nuclear" ).Hide()
+
+		Hud_GetChild( entityBar, "Money" ).Hide()
+		if (BoostStoreOpen()) {
+			Hud_SetColor( Hud_GetChild(entityBar, "Money"), 255, 215, 0, 255 )
+			Hud_SetText(Hud_GetChild(entityBar, "Money"), format("$%05d", money))
+			Hud_GetChild( entityBar, "Money" ).Show()
+
+			printt(titleString, ent.GetPlayerNetInt("FD_money256"), ent.GetPlayerNetInt( "FD_money256" ) * 256)
+			printt(titleString, ent.GetPlayerNetInt( "FD_money256" ))
+			printt(titleString, money)
+		}
+		else
+		{
+			Hud_SetColor( Hud_GetChild(entityBar, "Money"), 255, 255, 255, 255 )
+			Hud_SetText(Hud_GetChild(entityBar, "Money"), format("%06d", ent.GetPlayerGameStat( PGS_DETONATION_SCORE )))
+			Hud_GetChild( entityBar, "Money" ).Show()
+		}
+
+
+
+		if (ent.IsTitan()) {
+			// kit2
+			foreach (string name, int passive in titanKit2Table) {
+				if (PlayerHasPassive( ent, passive )) {
+					RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageAutotitan" )), "basicImage", GetItemImage( name ))
+					Hud_GetChild( entityBar, "EntityImageAutotitan" ).Show()
+					break
+				}
+			}
+
+
+			if (PlayerHasWeapon(ent, "mp_titanability_electric_smoke")) {
+				RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Smoke" )), "basicImage", $"rui/titan_loadout/tactical/titan_tactical_electric_smoke" )
+				Hud_GetChild( entityBar, "Smoke" ).Show()
+
+				entity soul = ent.GetTitanSoul()
+				if (IsValid(soul) && GetTitanCharacterName(soul.GetTitan()) == "vanguard") {
+					int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
+					if (currentUpgradeCount >= 2 && PlayerHasPassive(ent, ePassives.PAS_VANGUARD_CORE5))
+						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Smoke" )), "basicImage", $"rui/titan_loadout/passive/monarch_core_maelstrom" )
+				}
+			}
+			else
+				Hud_GetChild( entityBar, "Smoke" ).Hide()
+	
+
+			// Core
+			if ( !IsWatchingReplay() ){
+				entity soul = ent.GetTitanSoul()
+				if (IsCoreChargeAvailable(ent, soul) && !TitanCoreInUse( ent )) {
+					entity weapon = ent.GetOffhandWeapon( OFFHAND_EQUIPMENT )
+
+					if (IsValid(soul) && GetTitanCharacterName(soul.GetTitan()) == "vanguard")
+						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", GetVanguardCoreIcon( ent ))
+					else
+						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", GetWeaponInfoFileKeyFieldAsset_WithMods_Global( weapon.GetWeaponClassName(), weapon.GetMods(), "hud_icon" ))
+					
+					Hud_GetChild( entityBar, "Core" ).Show()
+
+					Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+
+				}
+				else
+					Hud_GetChild( entityBar, "Core" ).Hide()
+
+				if (IsValid( soul )) {
+					// Using, countdown
+					if (TitanCoreInUse( ent )) {
+						Hud_GetChild( entityBar, "CoreLabel" ).Show()
+						Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%1.1f", soul.GetTitanSoulNetFloat( "coreExpireFrac" )))
+						Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+					}
+					// Preparing
+					else if (!IsCoreChargeAvailable(ent, soul)) {
+						Hud_GetChild( entityBar, "CoreLabel" ).Show()
+						Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%1.1f", soul.GetTitanSoulNetFloat("coreAvailableFrac")))
+						Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), 255, 255, 255, 255 )
+					}
+				}
+			}
+
+			// vanguard
+			if ( GetTitanCharacterName(GetSoulFromPlayer(ent).GetTitan()) == "vanguard" )
+				SetVanguardIcons(entityBar, ent)
+		}
+
+		else
+		{
+			Hud_GetChild( entityBar, "Smoke" ).Hide()
+			Hud_GetChild( entityBar, "Core" ).Hide()
+
+		}
+	}
+	// SetVanguardIcons(entityBar, ent)
+
+	entityBar.Show()
+}
+
+void function ResetVanguardIcons(var entityBar, entity ent) {
+	var upgrade1 = Hud_GetChild( entityBar, "VanguardUpgrade1" )
+	var upgrade2 = Hud_GetChild( entityBar, "VanguardUpgrade2" )
+	var upgrade3 = Hud_GetChild( entityBar, "VanguardUpgrade3" )
+
+	upgrade1.Hide()
+	upgrade2.Hide()
+	upgrade3.Hide()
+}
+
+// TODO: Refine this func.
+void function SetVanguardIcons(var entityBar, entity ent)
+{
+
+	ResetVanguardIcons(entityBar, ent)
+	var upgrade1 = Hud_GetChild( entityBar, "VanguardUpgrade1" )
+	var upgrade2 = Hud_GetChild( entityBar, "VanguardUpgrade2" )
+	var upgrade3 = Hud_GetChild( entityBar, "VanguardUpgrade3" )
+
+
+	entity soul = ent.GetTitanSoul()
+
+	if (!IsValid(soul)) {
+		return
+	}
+		int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
+		if ( currentUpgradeCount >= 0 )
+		{
+			// $"rui/titan_loadout/passive/monarch_core_arc_rounds"
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) )  // Arc Rounds
+			{
+				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
+				GetItemImage( "pas_vanguard_core1" ) )
+			}
+			// $"rui/titan_loadout/passive/monarch_core_missile_racks"
+
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) ) //Missile Racks
+			{
+				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
+				GetItemImage( "pas_vanguard_core2" ) )
+			}
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) ) //Energy Transfer
+			{
+				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
+				GetItemImage( "pas_vanguard_core3" ) )
+			}
+		}
+		if ( currentUpgradeCount >= 1 )
+		{
+			upgrade1.Show()
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE4 ) )  // Rapid Rearm
+			{
+				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
+				GetItemImage( "pas_vanguard_core4" ) )
+			}
+			// $"rui/titan_loadout/passive/monarch_core_maelstrom"
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE5 ) ) //Maelstrom
+			{
+				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
+				GetItemImage( "pas_vanguard_core5" ) )
+			}
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE6 ) ) //Energy Field
+			{
+				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
+				GetItemImage( "pas_vanguard_core6" ) )
+			}
+		}
+		if ( currentUpgradeCount >= 2 )
+		{
+			upgrade2.Show()
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE7 ) )  // Multi-Target Missiles
+			{
+				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
+				GetItemImage( "pas_vanguard_core7" ) )
+			}
+			// $"rui/titan_loadout/passive/monarch_core_superior_chassis"
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE8 ) ) //Superior Chassis
+			{
+				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
+				GetItemImage( "pas_vanguard_core8" ) )
+			}
+			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE9 ) ) //XO-16 Battle Rifle
+			{
+				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
+				GetItemImage( "pas_vanguard_core9" ) )
+			}
+		}
+		if ( currentUpgradeCount > 2 )
+		{
+			upgrade3.Show()
+		}
+
+
+
+}
+
+
+asset function GetVanguardCoreIcon( entity player, int countOffset = 0 )
+{
+	Assert( player.IsTitan() )
+
+	if ( !IsConnected() ) //Persistence isn't available when we disconnect
+		return $""
+
+	return GetVanguardNextUpgradeIcon(player)
+}
+
+asset function GetVanguardNextUpgradeIcon(entity ent) {
+	entity soul = ent.GetTitanSoul()
+	if ( !IsValid( soul ) )
+		return $""
+		
+	int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
+	switch (currentUpgradeCount) {
+		case 0:
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) )  // Arc Rounds
+				return GetItemImage( "pas_vanguard_core1" )
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) ) //Missile Racks
+				return GetItemImage( "pas_vanguard_core2" )
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) ) //Energy Transfer
+				return GetItemImage( "pas_vanguard_core3" )
+			break;
+		case 1:
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE4 ) )  // Rapid Rearm
+				return GetItemImage( "pas_vanguard_core4" )
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE5 ) ) //Maelstrom
+				return GetItemImage( "pas_vanguard_core5" )
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE6 ) ) //Energy Field
+				return GetItemImage( "pas_vanguard_core6" ) 
+			break;
+		case 2:
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE7 ) )  // Multi-Target Missiles
+				return GetItemImage( "pas_vanguard_core7" ) 
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE8 ) ) //Superior Chassis
+				return GetItemImage( "pas_vanguard_core8" ) 
+			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE9 ) ) //XO-16 Battle Rifle
+				return GetItemImage( "pas_vanguard_core9" )
+			break;
+			default:
+				break;
+		}
+	return Dev_GetPlayerSettingAssetByKeyField_Global( "titan_atlas_vanguard", "core_building_icon" )
+	
+}
+
+void function TrySetBgColor(var entityBar, entity player) {
+	Hud_GetChild( entityBar, "EntityImageBg" ).Hide()
+	string name = player.GetPlayerName()
+	if (name in file.playerColor) {
+		Hud_GetChild( entityBar, "EntityImageBg" ).Show()
+		RuiSetFloat3( Hud_GetRui( Hud_GetChild( entityBar, "EntityImageBg" ) ), "basicImageColor", file.playerColor[name] )
+		
+		printt(name, file.playerColor[name])
+	}
+	else
+	{
+		if (player.IsTitan()) {
+			file.playerColor[name] <- GetBgColorFromTitan(player)
+		}
+		else if (IsValid(player.GetPetTitan())) {
+			file.playerColor[name] <- GetBgColorFromTitan(player.GetPetTitan())
+		}
+	}
+}
+
+
+vector function GetBgColorFromTitan(entity titan) {
+	switch (GetTitanCharacterName(titan).toupper()) {
+		case "RONIN" :
+			return <191, 191, 191>
+
+		case "NORTHSTAR" :
+			return <255, 237, 174>
+
+		case "TONE" :
+			return <36, 71, 210>
+
+		case "ION" :
+			return <187, 38, 36>
+
+		case "SCORCH" :
+			return <255, 179, 28>
+
+		case "LEGION" :
+			return <12, 12, 12>
+
+		case "VANGUARD" :
+			return <193, 174, 255>
+	}
+
+	return < 0, 0, 0>
+}

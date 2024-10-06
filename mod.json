@@ -1,0 +1,16 @@
+{
+	"Name": "Raintrap341.EntityStatus",
+	"Description": "Ultimate solution for Frontier-Defense gamemode.",
+	"LoadPriority": 3,
+	"RequiredOnClient": false,
+	"Version": "1.0.0",
+	"Scripts": [
+		{
+			"Path": "mp_entity_status.gnut",
+			"RunOn": "CLIENT && MP",
+			"ClientCallback": {
+				"After": "InitMpEntityStatus"
+			}
+		}
+	]
+}
