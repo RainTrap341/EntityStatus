@@ -1,5 +1,5 @@
 ///
-///	THIS MOD IS DESIGNED FOR FRONTIER-DEFENSE MODE IN TITANFALL2.
+///	THIS MOD IS DESIGNED ONLY FOR FRONTIER-DEFENSE MODE IN TITANFALL2.
 /// DO NOT USE THIS IN OTHER GAMEMODES. I JUST PUSHED AS FAR AS I CAN ON THIS.
 ///
 ///
@@ -15,6 +15,13 @@ const int maxSlot = 8
 const bool isDev = true
 
 table < string, int > titanKit2Table = {
+	[ "pas_ronin_weapon" ]					= ePassives.PAS_RONIN_WEAPON,
+	[ "pas_northstar_weapon" ]				= ePassives.PAS_NORTHSTAR_WEAPON,
+	[ "pas_ion_weapon" ]					= ePassives.PAS_ION_WEAPON,
+	[ "pas_tone_weapon" ]					= ePassives.PAS_TONE_WEAPON,
+	[ "pas_scorch_weapon" ]					= ePassives.PAS_SCORCH_WEAPON,
+	[ "pas_legion_weapon" ]					= ePassives.PAS_LEGION_WEAPON,
+
 	[ "pas_ion_tripwire" ]					= ePassives.PAS_ION_TRIPWIRE,
 	[ "pas_ion_vortex" ]					= ePassives.PAS_ION_VORTEX,
 	[ "pas_ion_lasercannon" ]				= ePassives.PAS_ION_LASERCANNON,
@@ -73,6 +80,9 @@ struct
 {
 	var entityStatus
 	table playerColor
+	table < string, int> waveScores
+
+	bool shouldHide = false
 } file
 
 
@@ -80,6 +90,8 @@ struct
 
 void function InitMpEntityStatus() {
 	AddCallback_GameStateEnter( eGameState.Prematch, HideEntityStatus )
+	AddCallback_GameStateEnter( eGameState.Prematch, HideEntityStatus )
+	AddCallback_GameStateEnter( eGameState.Playing, ShowEntityStatus )
 	AddCallback_GameStateEnter( eGameState.WinnerDetermined, HideEntityStatus )
 	AddCallback_GameStateEnter( eGameState.Epilogue, HideEntityStatus )
 	AddScoreboardShowCallback( HideEntityStatus )
@@ -91,12 +103,14 @@ void function InitMpEntityStatus() {
 
 void function HideEntityStatus()
 {
+	file.shouldHide = true
 	if (file.entityStatus != null) 
 		file.entityStatus.Hide()
 }
 
 void function ShowEntityStatus()
 {
+	file.shouldHide = false
 	if (file.entityStatus != null) 
 		file.entityStatus.Show()
 }
@@ -105,19 +119,21 @@ void function Monitor() {
 	WaitFrame()
 	
 
-	// if ( GameRules_GetGameMode() != FD ){
-	// 	return
-	// }
+	if ( GameRules_GetGameMode() != FD ){
+		return
+	}
+	AddScoreEventCallback( GetScoreEvent( "FDTeamWave" ).eventId, ClearScoreInWave )
+
 	file.entityStatus = HudElement("EntityStatus")
 	while (true) {
 		WaitFrame()
 
-		// if ( IsLobby() || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
-		// {
-		// 	if (file.entityStatus != null) 
-		// 		file.entityStatus.Hide()
-		// 	continue
-		// }
+		if ( IsLobby() || file.shouldHide || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
+		{
+			if (file.entityStatus != null) 
+				file.entityStatus.Hide()
+			continue
+		}
 			
 		for (int i = 0; i < maxSlot; i++) {
 			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
@@ -162,9 +178,9 @@ asset function PrepareIconImageAsset(entity player) {
 // ported from SetStatsBarValues
 void function SetBarValues(int panelIndex, entity ent)
 {
-	// if ( GameRules_GetGameMode() != FD ){
-	// 	return
-	// }
+	if ( GameRules_GetGameMode() != FD ){
+		return
+	}
 
 
 
@@ -213,8 +229,8 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	
 	// Change the bg color of avatar due to titan class
-	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImage", $"vgui/hud/white")
-	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageAlpha", 0.6 )
+	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImage", $"vgui/hud/white")
+	// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageAlpha", 0.6 )
 	// thread TrySetBgColor(entityBar, ent)
 
 	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBg" )), "basicImageColor", < FRIENDLY_R, FRIENDLY_G, FRIENDLY_B> )
@@ -257,6 +273,7 @@ void function SetBarValues(int panelIndex, entity ent)
 	// Hud_SetColor( Hud_GetChild( entityBar, "BarDesc" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
 
 	ResetVanguardIcons(entityBar, ent)
+	// Hud_GetChild( entityBar, "CoreLabel" ).Hide()
 
 	if (IsValid(ent) && ent.IsPlayer() && IsAlive(ent) && GameRules_GetGameMode() == FD) {
 		int numShieldBoosts = ent.GetPlayerNetInt( "numHarvesterShieldBoost" )
@@ -282,12 +299,12 @@ void function SetBarValues(int panelIndex, entity ent)
 		Hud_GetChild( entityBar, "Money" ).Hide()
 		if (BoostStoreOpen()) {
 			Hud_SetColor( Hud_GetChild(entityBar, "Money"), 255, 215, 0, 255 )
-			Hud_SetText(Hud_GetChild(entityBar, "Money"), format("$%05d", money))
+			Hud_SetText(  Hud_GetChild(entityBar, "Money"), format("$%05d", GetPlayerMoney(ent)))
 			Hud_GetChild( entityBar, "Money" ).Show()
 
-			printt(titleString, ent.GetPlayerNetInt("FD_money256"), ent.GetPlayerNetInt( "FD_money256" ) * 256)
-			printt(titleString, ent.GetPlayerNetInt( "FD_money256" ))
-			printt(titleString, money)
+			// printt(titleString, ent.GetPlayerNetInt("FD_money256"), ent.GetPlayerNetInt( "FD_money256" ) * 256)
+			// printt(titleString, ent.GetPlayerNetInt( "FD_money256" ))
+			// printt(titleString, money)
 		}
 		else
 		{
@@ -337,7 +354,7 @@ void function SetBarValues(int panelIndex, entity ent)
 					
 					Hud_GetChild( entityBar, "Core" ).Show()
 
-					Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+					
 
 				}
 				else
@@ -567,4 +584,44 @@ vector function GetBgColorFromTitan(entity titan) {
 	}
 
 	return < 0, 0, 0>
+}
+
+// TODO: REFINE. Record score of every wave.
+int function UpdateScoreInWave(entity player)
+{
+	if (!IsValid(player)) {
+		return 0
+	}
+	string name = player.GetPlayerName()
+	int waveNum = GetGlobalNetInt( "FD_currentWave" ) + 1
+
+	if (!(name in file.waveScores)) {
+		file.waveScores[name] <- 0
+
+		if (true) {
+			
+		}
+	}
+
+
+	return player.GetPlayerGameStat( PGS_DETONATION_SCORE ) - file.waveScores[name]
+}
+
+void function ClearScoreInWave(int pointValue,entity player)
+{
+	if (!IsValid(player)) {
+		return
+	}
+
+	string name = player.GetPlayerName()
+	int waveNum = GetGlobalNetInt( "FD_currentWave" ) + 1
+
+	if (! (name in file.waveScores)) {
+		file.waveScores[name] <- 0
+	}
+
+	if (waveNum == 1) {
+		file.waveScores[name] = player.GetPlayerGameStat( PGS_DETONATION_SCORE )
+	}
+	file.waveScores[name] = player.GetPlayerGameStat( PGS_DETONATION_SCORE ) - file.waveScores[name]
 }

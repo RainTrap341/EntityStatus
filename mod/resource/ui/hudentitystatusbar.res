@@ -59,7 +59,7 @@
 
 		wide				52
 		tall				52
-		visible				1
+		visible				0
 		scaleImage			1
 		xpos 				-5
 		ypos				10
