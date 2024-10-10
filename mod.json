@@ -3,7 +3,7 @@
 	"Description": "Ultimate solution for Frontier-Defense gamemode.",
 	"LoadPriority": 3,
 	"RequiredOnClient": false,
-	"Version": "1.0.0",
+	"Version": "1.2.0",
 	"Scripts": [
 		{
 			"Path": "mp_entity_status.gnut",

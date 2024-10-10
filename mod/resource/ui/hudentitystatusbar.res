@@ -35,6 +35,22 @@
 		zpos				901
 	}
 
+	EntityImageBattery
+	{
+		ControlName 			RuiPanel
+		rui 					"ui/basic_image.rpak"
+		basicImage 				""
+
+
+		wide				24
+		tall				24
+		visible				0
+		scaleImage			1
+		xpos 				22
+		ypos				10
+		zpos				901
+	}
+
 	EntityImageShade
 	{
 		ControlName 			RuiPanel
@@ -67,6 +83,24 @@
 
 	}
 	//////////////// vanguard ////////////////
+
+	// APEX
+	VanguardUpgrade0
+	{
+		ControlName 			RuiPanel
+		rui 					"ui/basic_image.rpak"
+		basicImage 				"vgui/hud/white"
+
+
+		wide				24
+		tall				24
+		visible				0
+		scaleImage			1
+		xpos 				155
+		ypos				55
+		zpos				900
+	}
+
 	VanguardUpgrade1
 	{
 		ControlName 			RuiPanel
@@ -76,11 +110,15 @@
 
 		wide				24
 		tall				24
-		visible				1
+		visible				0
 		scaleImage			1
-		xpos 				178
-		ypos				55
+		xpos 				0
 		zpos				900
+
+		pin_to_sibling				VanguardUpgrade0
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_RIGHT
+
 	}
 
 	VanguardUpgrade2
@@ -111,7 +149,7 @@
 
 		wide				24
 		tall				24
-		visible				1
+		visible				0
 		scaleImage			1
 		xpos 				0
 		zpos				900
@@ -120,7 +158,8 @@
 		pin_corner_to_sibling		TOP_LEFT
 		pin_to_sibling_corner		TOP_RIGHT
 	}
-	//////////////
+
+	///////////////////////////////
 	
 	EntityTitle
 	{
@@ -134,23 +173,26 @@
 		//rui					"ui/loadout_label.rpak"
 
 		xpos						50
-		ypos						13
+		ypos						10
 		zpos						900
 		wide						340
 		tall						36
 		visible						1
 	}
+	
 //////////////////////////////////////////////////
 
 	BarFill
 	{
 		ControlName					ImagePanel
-		xpos 						-2
+		xpos 						0
 		ypos						3
 		zpos						204
 		wide 						200
-		tall 						18
-		//image 						"ui/menu/eog/xp_bar"
+		tall 						23
+		//image 						"vgui/hud/coop/wave_callout_strip_lines"
+		//drawColor			"255 255 255 255"
+
 		image 						"vgui/hud/white"
 		drawColor	"87 151 219 160"
 
@@ -162,14 +204,35 @@
 		pin_to_sibling_corner		BOTTOM_LEFT
 	}
 
+
+	BarFillAutotitan
+	{
+		ControlName					ImagePanel
+		xpos 						0
+		ypos						8
+		zpos						204
+		wide 						200
+		tall 						5
+		
+		image 						"vgui/hud/white"
+		drawColor	"161 214 0 255"
+
+		visible						1
+		scaleImage					1
+
+		pin_to_sibling				EntityTitle
+		pin_corner_to_sibling		BOTTOM_LEFT
+		pin_to_sibling_corner		BOTTOM_LEFT
+	}
+
 	BarFillShadow
 	{
 		ControlName					ImagePanel
-		xpos 						-3
+		xpos 						0
 		ypos						3
 		zpos						205
 		wide 						200
-		tall 						18
+		tall 						23
 		//image 						"ui/menu/eog/xp_bar_shadow"
 		image 						"vgui/hud/white"
 		drawColor	"128 128 128 80"
@@ -188,11 +251,11 @@
 		labelText				"0/0"
 		auto_tall_tocontents 	1
 		wrap					1
-		xpos						-5
-		ypos						0
+		xpos						-4
+		ypos						4
 		zpos						1000
 		wide						270
-		tall						14
+		tall						15
 		visible						1
 
 		textAlignment			middle
@@ -212,12 +275,12 @@
 		labelText				"$00000"
 		auto_tall_tocontents 	1
 		wrap					1
-		xpos						-150
-		ypos						0
+		xpos						-145
+		ypos						4
 		zpos						1000
 		wide						270
 		tall						14
-		visible						0
+		visible						1
 		fgcolor_override	"255 215 0 255"
 
 		textAlignment			middle
@@ -242,14 +305,32 @@
 		scaleImage			1
 		xpos 				-125
 		ypos				25
-		zpos				1000
+		zpos				900
 
 		pin_to_sibling				BarFillShadow
 		pin_corner_to_sibling		TOP_LEFT
 		pin_to_sibling_corner		TOP_LEFT
 	}
 
+	ShieldBoostCount
+	{
+		ControlName 			Label
 
+		labelText				"0"
+		fgcolor_override	"0 0 255 255"
+		wide				30
+		tall				30
+		visible				0
+		scaleImage			1
+		xpos 				-10
+		ypos				0
+		zpos				901
+		font					Default_21
+
+		pin_to_sibling				ShieldBoost
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_LEFT
+	}
 
 	Nuclear
 	{
@@ -267,6 +348,26 @@
 		zpos				900
 
 		pin_to_sibling				ShieldBoost
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_LEFT
+	}
+
+	NuclearCount
+	{
+		ControlName 			Label
+
+		labelText				"0"
+		fgcolor_override	"255 0 0 255"
+		wide				30
+		tall				30
+		visible				0
+		scaleImage			1
+		xpos 				-10
+		ypos				0
+		zpos				901
+		font					Default_21
+
+		pin_to_sibling				Nuclear
 		pin_corner_to_sibling		TOP_LEFT
 		pin_to_sibling_corner		TOP_LEFT
 	}
@@ -291,11 +392,51 @@
 		pin_to_sibling_corner		TOP_LEFT
 	}
 
+	SmokeCount
+	{
+		ControlName 			Label
+
+		labelText				"0"
+		fgcolor_override	"91 255 31 255"
+		wide				30
+		tall				30
+		visible				0
+		scaleImage			1
+		xpos 				-10
+		ypos				0
+		zpos				901
+		font					Default_21
+
+		pin_to_sibling				Smoke
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_LEFT
+	}
+
 	Core
 	{
 		ControlName 			RuiPanel
 		rui 					"ui/basic_image.rpak"
 		basicImage 				"rui/titan_loadout/passive/monarch_core_maelstrom"
+
+
+		wide				52
+		tall				52
+		visible				1
+		scaleImage			1
+		xpos 				-30
+		ypos				0
+		zpos				900
+
+		pin_to_sibling				Smoke
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_LEFT
+	}
+
+	Core0
+	{
+		ControlName 			RuiPanel
+
+		rui 					"ui/ability_hud.rpak" 
 
 
 		wide				52
@@ -319,12 +460,12 @@
 
 		drawColor	"0 0 0 90"
 
-		wide				52
-		tall				52
-		visible				0
+		wide				60
+		tall				60
+		visible				1
 		scaleImage			1
-		xpos 				0
-		ypos				0
+		xpos 				4
+		ypos				4
 		zpos				899
 
 		pin_to_sibling				Core
@@ -335,22 +476,26 @@
 	CoreLabel
 	{
 		ControlName				Label
-		labelText				""
-		wrap					1
-		xpos						-12
+		labelText				"100"
+		//wrap					1
+		xpos						0
 		ypos						0
 		zpos						901
-		wide						52
-		tall						52
-		visible						0
+		//wide						52
+		tall						60
+		visible						1
 
-		textAlignment			center
+		//textAlignment			center
 		font					Default_27
 		fgcolor_override		"255 255 255 255"
 
 		pin_to_sibling				Core
-		pin_corner_to_sibling		TOP_LEFT
-		pin_to_sibling_corner		TOP_LEFT
+		pin_corner_to_sibling		BOTTOM
+		pin_to_sibling_corner		BOTTOM
+
+		//textAlignment				middle
+		auto_wide_tocontents		1
+		
 	}
 
 }

@@ -72,7 +72,26 @@ table < string, int > vanguardUpgrades = {
 
 }
 
+struct PlayerInfo
+{
+	string playerName = ""
 
+	int ageisLevel = -1
+
+	string titanClass = ""
+	asset titanCoreIcon = $""
+
+
+	asset vanguardCoreIcon0 = $""	// APEX
+	asset vanguardCoreIcon1 = $""
+	asset vanguardCoreIcon2 = $""
+	asset vanguardCoreIcon3 = $""
+
+	vector color
+
+	var rodeoRUI
+	var bar
+}
 
 
 
@@ -82,7 +101,11 @@ struct
 	table playerColor
 	table < string, int> waveScores
 
+	table < string, PlayerInfo> playerInfos
+
 	bool shouldHide = false
+
+	var test
 } file
 
 
@@ -94,46 +117,80 @@ void function InitMpEntityStatus() {
 	AddCallback_GameStateEnter( eGameState.Playing, ShowEntityStatus )
 	AddCallback_GameStateEnter( eGameState.WinnerDetermined, HideEntityStatus )
 	AddCallback_GameStateEnter( eGameState.Epilogue, HideEntityStatus )
-	AddScoreboardShowCallback( HideEntityStatus )
-    AddScoreboardHideCallback( ShowEntityStatus )
+	AddScoreboardShowCallback( OnSbShow )
+    AddScoreboardHideCallback( OnSbHide )
 
 
 	thread Monitor()
 }
 
+void function OnSbShow() {
+	file.shouldHide = true
+}
+void function OnSbHide() {
+	file.shouldHide = false
+}
 void function HideEntityStatus()
 {
-	file.shouldHide = true
 	if (file.entityStatus != null) 
 		file.entityStatus.Hide()
 }
 
 void function ShowEntityStatus()
 {
-	file.shouldHide = false
 	if (file.entityStatus != null) 
 		file.entityStatus.Show()
 }
 
+void function TestFunc()
+{
+	PlayerInfo p
+	p.playerName = "ano"
+	array<PlayerInfo> a 
+	a.append(p)
+
+	PlayerInfo b = a[0]
+	// PlayerInfo c = a[0].weakref()
+	// PlayerInfo d = p.weakref()
+	b.playerName = "bbbbbb"
+
+	printt(p.playerName, a[0].playerName, b.playerName)
+
+	Assert(p == a[0])
+	Assert(p == b)
+	// Assert(p == c)
+	// Assert(p == d)
+}
+
+bool function ShowDrawHud() {
+	if (GameRules_GetGameMode() != FD || file.shouldHide || IsLobby() || file.shouldHide || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
+	{
+		return false;
+	}
+
+	return true
+}
+
 void function Monitor() {
 	WaitFrame()
+	// TestFunc()
 	
-
-	if ( GameRules_GetGameMode() != FD ){
-		return
-	}
-	AddScoreEventCallback( GetScoreEvent( "FDTeamWave" ).eventId, ClearScoreInWave )
+	// AddScoreEventCallback( GetScoreEvent( "FDTeamWave" ).eventId, ClearScoreInWave )
 
 	file.entityStatus = HudElement("EntityStatus")
+	HideEntityStatus()
+
 	while (true) {
 		WaitFrame()
 
-		if ( IsLobby() || file.shouldHide || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
-		{
-			if (file.entityStatus != null) 
-				file.entityStatus.Hide()
+		if (!ShowDrawHud()) {
+			HideEntityStatus()
 			continue
 		}
+		ShowEntityStatus()
+		
+
+
 			
 		for (int i = 0; i < maxSlot; i++) {
 			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
@@ -143,6 +200,9 @@ void function Monitor() {
 		file.entityStatus.Show()
 		int i = 0
 		foreach (entity ent in GetTargets()) {
+			string name = ent.GetPlayerName()
+
+
 			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
 			panel.Show()
 			SetBarValues(i, ent)
@@ -152,6 +212,10 @@ void function Monitor() {
 				break
 			}
 		}
+
+
+
+
 	}
 }
 
@@ -167,7 +231,7 @@ asset function PrepareIconImageAsset(entity player) {
 
 	if (IsValid(player) && IsAlive(player) && player.IsPlayer()) {
 		if(player.IsTitan())
-		 	icon = GetIconForTitanClass(GetTitanCharacterName(GetSoulFromPlayer(player).GetTitan()))
+		 	icon = GetPlayerTitanIcon(player)
 		else if (player.GetOffhandWeapons().len() > 1 && IsValid(player.GetOffhandWeapons()[1]))
 			icon = GetWeaponInfoFileKeyFieldAsset_Global( player.GetOffhandWeapons()[1].GetWeaponClassName(), "hud_icon" )
 	}
@@ -178,12 +242,34 @@ asset function PrepareIconImageAsset(entity player) {
 // ported from SetStatsBarValues
 void function SetBarValues(int panelIndex, entity ent)
 {
-	if ( GameRules_GetGameMode() != FD ){
+	
+	// Get nested panel
+	var entityBar = HudElement("EntityStatusBar" + panelIndex, file.entityStatus)
+	entityBar.Hide()
+
+
+	Assert( ent.IsPlayer() )
+	/// test stuff
+	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBattery" )), "basicImage",
+	// $"rui/hud/battery/battery_capture_friendly")
+	// Hud_GetChild( entityBar, "Core0" ).Show()
+
+	// entity weapon = ent.GetOffhandWeapon( 1 )
+	// if (IsValid(weapon)) {
+	// 	InitOffhandRui(Hud_GetRui(Hud_GetChild(entityBar, "Core0")), ent, weapon)
+	// 	UpdateOffhandRuiVisibility( Hud_GetRui(Hud_GetChild(entityBar, "Core0")), "%offhand1%" )
+	// }
+
+	if ( !ShowDrawHud() ){
+		HideEntityStatus()
 		return
 	}
+	else
+	{
+		ShowEntityStatus()
+	}
 
-
-
+	
 	string titleString = ent.IsPlayer() ? ent.GetPlayerName() : ent.GetTargetName()
 	var startValue = 0
 	var endValue = ent.GetMaxHealth()
@@ -194,8 +280,7 @@ void function SetBarValues(int panelIndex, entity ent)
 	Assert( endValue > startValue )
 	Assert( currentValue >= startValue && currentValue <= endValue )
 
-	// Get nested panel
-	var entityBar = HudElement("EntityStatusBar" + panelIndex, file.entityStatus)
+
 
 
 
@@ -205,20 +290,14 @@ void function SetBarValues(int panelIndex, entity ent)
 	RuiSetFloat( Hud_GetRui(avatar), "basicImageAlpha", 1 )
 
 
-	// autotian
-	Hud_GetChild( entityBar, "EntityImageAutotitan" ).Hide()
-	if (IsValid(ent.GetPetTitan()))
-	{
-		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageAutotitan" )), "basicImage",
-		GetIconForTitanClass(GetTitanCharacterName(ent.GetPetTitan())))
-		Hud_GetChild( entityBar, "EntityImageAutotitan" ).Show()
-		//  printt(titleString, "GetPetTitan", GetIconForTitanClass(GetTitanCharacterName(ent.GetPetTitan())))
-	}
+
+
 
 	// Thats bad. Core with bg is not that awesome.
-	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", image)
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", $"rui/titan_loadout/core/titan_core_laser" )
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", $"vgui/white" )
 	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
-	// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.3 )
+
 
 
 	// avatar bg
@@ -254,44 +333,252 @@ void function SetBarValues(int panelIndex, entity ent)
 	
 
 
+	
+
+
 	// Update bar progress
 	var frac = (currentValue - startValue) / endValue;
 	// printt("start", startValue, "end", endValue, "current", currentValue, "frac", frac)
 
-
 	var barFill = Hud_GetChild( entityBar, "BarFill" )
 	Hud_SetScaleX( barFill, frac )
 	Hud_SetColor( barFill, FRIENDLY_R, FRIENDLY_G, FRIENDLY_B, 255 )
-
+ 
 	if (ent.IsTitan() && GetDoomedState( ent )) 
 		Hud_SetColor( barFill, BURN_R, BURN_G, BURN_B, 255 )
 
 	var barFillShadow = Hud_GetChild( entityBar, "BarFillShadow" )
-
-
 	Hud_SetText( Hud_GetChild( entityBar, "BarDesc" ), format("%.0f/%.0f", currentValue, endValue) )
+
 	// Hud_SetColor( Hud_GetChild( entityBar, "BarDesc" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
 
-	ResetVanguardIcons(entityBar, ent)
-	// Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+	entity offhandWeapon = ent.GetOffhandWeapon( OFFHAND_INVENTORY )
+	if (IsValid(offhandWeapon)) {
+		// printt(ent.GetPlayerName(), "has Item", offhandWeapon.GetWeaponClassName(), "In Inv: ", ent.GetPlayerNetInt("itemInventoryCount"), "(itemInventoryCount), ")
+		// printt(ent.GetPlayerName(), "has Item", offhandWeapon.GetWeaponClassName(), "In Inv: ", offhandWeapon.GetWeaponPrimaryClipCount(), "(GetWeaponPrimaryClipCount)")
+	}
 
+	ResetVanguardIcons(entityBar)
+
+	///////////// COOOOOOOOOOOOOORE
+	Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+	Hud_GetChild( entityBar, "CoreBg" ).Hide()
+	Hud_GetChild( entityBar, "Core" ).Hide()
+	Hud_GetChild( entityBar, "Core0" ).Hide()
+
+	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core0" )), "basicImage", $"rui/menu/dpad_comms/emoji/skull" )
+	// UpdateAbilityHud(Hud_GetRui(Hud_GetChild(entityBar, "Core")), ent)
+	// RuiSetImage( Hud_GetRui(Hud_GetChild(entityBar, "Core0")), "hudIcon", $"rui/menu/dpad_comms/emoji/skull" )
+	// RuiSetBool( Hud_GetRui(Hud_GetChild(entityBar, "Core0")), "isVisible", true )
+
+
+	
+	
+	asset coreIcon = GetPlayerCoreIcon(ent)
+	asset titanIcon = GetPlayerTitanIcon(ent)
+	if (coreIcon != $"" && HasTitan(ent)) {
+		Hud_GetChild( entityBar, "Core" ).Show()
+		Hud_GetChild( entityBar, "CoreBg" ).Show()
+
+		
+		// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", coreIcon)
+		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", coreIcon)
+		// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 0.7 )
+
+
+		entity soul = ent.GetTitanSoul()
+		entity titan
+		// Make auto-titan available
+		if (IsValid(ent.GetPetTitan())) {
+			soul = ent.GetPetTitan().GetTitanSoul()
+		}
+
+		
+		// Core Build
+		if (IsValid( soul )) {
+			titan = soul.GetTitan()
+			// Core-ready and not in-use
+			// if (IsCoreChargeAvailable(ent, soul) && !TitanCoreInUse( ent )) {
+
+		
+			// }
+
+
+			
+		// printt(ent.GetPlayerName(), "GetShieldHealth:", titan.GetShieldHealth(), ",GetShieldHealthMax():", titan.GetShieldHealthMax())
+		// printt(ent.GetPlayerName(), "Frac:", GetShieldHealthFrac(ent))
+
+
+			// Playertitan core gets more alpha than auto one
+			if (ent.IsTitan()) 
+				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 0.7 )
+			else
+				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 0.3 )
+
+			Hud_GetChild( entityBar, "CoreLabel" ).Show()
+
+
+			float coreAvailableFrac = soul.GetTitanSoulNetFloat( "coreExpireFrac" )
+			float coreReadyFrac = soul.GetTitanSoulNetFloat( "coreAvailableFrac" )
+			// printt(ent.IsTitan() ? "Titan" : "Pilot", "(",
+			//     ent.GetPlayerName(), ")", "coreAvailableFrac:", coreAvailableFrac, ",coreReadyFrac:", coreReadyFrac)
+
+			RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
+			RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.3 )
+			
+			// Using, countdown
+			if (ent.IsTitan() && TitanCoreInUse(ent)) {
+				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", coreAvailableFrac * 100 + 0.5))
+				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <180,180,180> )
+				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.7 )
+
+				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <66, 66, 66> )
+				Hud_SetScaleX(Hud_GetChild(entityBar, "CoreBg"), coreAvailableFrac)
+
+				
+			}
+			// Preparing
+			else if (!IsCoreChargeAvailable(ent, soul) && coreReadyFrac < 1.0) {
+				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", coreReadyFrac * 100 + 0.5))
+				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), PARTY_R, PARTY_G, PARTY_B, 255 )
+
+				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0, 0, 0> )
+				Hud_SetScaleX(Hud_GetChild(entityBar, "CoreBg"), coreReadyFrac)
+
+			}
+
+			// Core-ready bling-bling
+			if (IsCoreChargeAvailable(ent, soul)) {
+				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", 100))
+				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 1.0 )
+				// Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+
+				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <66, 66, 66> )
+				// thread BlingBling(Hud_GetChild(entityBar, "CoreBg"), < 0, 0, 0 > , <66, 66, 66>)
+				// thread BlingBling(Hud_GetChild(entityBar, "Core"), < 255, 255, 255 > , < 128, 128, 128 > , 0.4, 1.0, 255, 128)
+			}
+
+
+
+
+			// vanguard
+			if (GetPlayerTitanClass(ent) == "vanguard" && HasTitan(ent))
+				SetVanguardIcons(entityBar, ent)
+			
+			
+		}
+
+
+	
+	}
+	
+	// Player has no titan
+	else if (!HasTitan(ent) && titanIcon != $"" && GameRules_GetGameMode() == FD && GetGlobalNetInt("FD_currentWave") > 0)
+	{
+		
+		Hud_GetChild( entityBar, "BarFillAutotitan" ).Hide()
+
+		// + ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
+		float meter = ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
+
+		Hud_GetChild( entityBar, "Core" ).Show()
+		Hud_GetChild( entityBar, "CoreLabel" ).Show()
+
+		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", titanIcon)
+		Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", (meter * 100)+ 0.5))
+		Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+
+
+
+		// printt(ent.GetPlayerName(), "With EARNMETER_EARNEDFRAC", ent.GetPlayerNetFloat(EARNMETER_EARNEDFRAC),
+		//  "and EARNMETER_OWNEDFRAC", ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC ))
+	}
+
+
+
+	
+
+	///////////////////////////////////////////// Autotian
+
+	Hud_GetChild( entityBar, "EntityImageAutotitan" ).Hide()
+	Hud_GetChild( entityBar, "BarFillAutotitan" ).Hide()
+	if (IsValid(ent.GetPetTitan()))
+	{
+		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageAutotitan" )), "basicImage",GetPlayerTitanIcon(ent))
+		Hud_GetChild( entityBar, "EntityImageAutotitan" ).Show()
+
+
+
+		// printt("start", startValue, "end", endValue, "current", currentValue, "frac", frac)
+		float autoTitanFrac = ent.GetPetTitan().GetHealth().tofloat() / ent.GetPetTitan().GetMaxHealth()
+		Hud_SetScaleX( Hud_GetChild( entityBar, "BarFillAutotitan" ), autoTitanFrac )
+
+		Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), 161, 214, 0, 255 )
+		// Doom color
+		if ( GetDoomedState( ent.GetPetTitan() )) {
+			Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), BURN_R, BURN_G, BURN_B, 255 )
+		}
+		
+		Hud_GetChild( entityBar, "BarFillAutotitan" ).Show()
+
+	}
+	else if (ent.IsTitan()) {
+		// player on titan. Shield. ent.GetShieldHealth() is not for player
+		// not available.
+		// entity titan = ent.GetTitanSoul().GetTitan()
+
+		// Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillAutotitan"), float(titan.GetShieldHealth()) / float(titan.GetShieldHealthMax()))
+		// Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), SHIELD_R, SHIELD_G, SHIELD_B, 255 )
+		
+		Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillAutotitan"), ent.GetTitanSoul().GetTitanSoulNetFloat( "coreAvailableFrac" ))
+		Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+
+		
+		Hud_GetChild( entityBar, "BarFillAutotitan" ).Show()
+		
+	}
+
+	
+
+
+
+
+
+	////////////////// clean
+
+	// Hud_GetChild( entityBar, "CoreLabel" ).Hide()
+	Hud_GetChild( entityBar, "EntityImageBattery" ).Hide()
+	Hud_GetChild(entityBar, "SmokeCount").Hide()
+	//////////
 	if (IsValid(ent) && ent.IsPlayer() && IsAlive(ent) && GameRules_GetGameMode() == FD) {
 		int numShieldBoosts = ent.GetPlayerNetInt( "numHarvesterShieldBoost" )
 		int numCoreOverload = ent.GetPlayerNetInt( "numSuperRodeoGrenades" )
 		int money = ent.GetPlayerNetInt( "FD_money256" ) * 256 + ent.GetPlayerNetInt( "FD_money256" )
 		
+		var shieldBoostHud = Hud_GetChild(entityBar, "ShieldBoostCount")
+		shieldBoostHud.Hide()
 		if ( numShieldBoosts > 0 )
 		{
 			RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "ShieldBoost" )), "basicImage",$"rui/menu/boosts/boost_icon_harvester_shield")
 			Hud_GetChild( entityBar, "ShieldBoost" ).Show()
+
+			shieldBoostHud.Show()
+			Hud_SetText( shieldBoostHud, "" + numShieldBoosts )
 		}
 		else
 			Hud_GetChild( entityBar, "ShieldBoost" ).Hide()
 
+		var coreOverloadHud = Hud_GetChild(entityBar, "NuclearCount")
+		coreOverloadHud.Hide()
 		if ( numCoreOverload > 0 )
 		{
 			RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Nuclear" )), "basicImage", $"rui/menu/boosts/boost_icon_core_overload" )
 			Hud_GetChild( entityBar, "Nuclear" ).Show()
+
+			coreOverloadHud.Show()
+			Hud_SetText( coreOverloadHud, "" + numCoreOverload )
 		}
 		else
 			Hud_GetChild( entityBar, "Nuclear" ).Hide()
@@ -308,10 +595,13 @@ void function SetBarValues(int panelIndex, entity ent)
 		}
 		else
 		{
+			// printt(ent.GetPlayerName(),  ent.GetPlayerGameStat( PGS_SCORE ))
 			Hud_SetColor( Hud_GetChild(entityBar, "Money"), 255, 255, 255, 255 )
 			Hud_SetText(Hud_GetChild(entityBar, "Money"), format("%06d", ent.GetPlayerGameStat( PGS_DETONATION_SCORE )))
+			// Hud_SetText(Hud_GetChild(entityBar, "Money"), format("%d+%d", ent.GetPlayerGameStat(PGS_ASSAULT_SCORE), ent.GetPlayerGameStat( PGS_DEFENSE_SCORE )))
 			Hud_GetChild( entityBar, "Money" ).Show()
 		}
+
 
 
 
@@ -325,7 +615,9 @@ void function SetBarValues(int panelIndex, entity ent)
 				}
 			}
 
-
+			// Elec-smoke
+			var smokeCountHud = Hud_GetChild(entityBar, "SmokeCount")
+			// smokeCountHud.Hide()
 			if (PlayerHasWeapon(ent, "mp_titanability_electric_smoke")) {
 				RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Smoke" )), "basicImage", $"rui/titan_loadout/tactical/titan_tactical_electric_smoke" )
 				Hud_GetChild( entityBar, "Smoke" ).Show()
@@ -336,55 +628,52 @@ void function SetBarValues(int panelIndex, entity ent)
 					if (currentUpgradeCount >= 2 && PlayerHasPassive(ent, ePassives.PAS_VANGUARD_CORE5))
 						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Smoke" )), "basicImage", $"rui/titan_loadout/passive/monarch_core_maelstrom" )
 				}
+
+
+
+				entity offhandWeapon = ent.GetOffhandWeapon( OFFHAND_INVENTORY )
+				if (IsValid(offhandWeapon)) {
+					// printt(ent.GetPlayerName(), "has Smoke In Inv:", offhandWeapon.GetWeaponPrimaryClipCount())
+				
+					try {
+						smokeCountHud.Show()
+
+						int segments = ent.GetWeaponAmmoStockpile( offhandWeapon )
+						segments += offhandWeapon.GetWeaponPrimaryClipCount()
+						Hud_SetText( smokeCountHud, "" + segments )
+						Hud_SetColor( smokeCountHud, PARTY_R, PARTY_G, PARTY_B, 255 )
+					} catch (exception){
+						smokeCountHud.Hide()
+
+						// printt(ent.GetPlayerName(), "IS NOT LOCAL PLAYER. Can't Call GetWeaponPrimaryClipCountMax() on Smoke")
+					}
+
+				}
 			}
 			else
 				Hud_GetChild( entityBar, "Smoke" ).Hide()
 	
 
-			// Core
-			if ( !IsWatchingReplay() ){
-				entity soul = ent.GetTitanSoul()
-				if (IsCoreChargeAvailable(ent, soul) && !TitanCoreInUse( ent )) {
-					entity weapon = ent.GetOffhandWeapon( OFFHAND_EQUIPMENT )
-
-					if (IsValid(soul) && GetTitanCharacterName(soul.GetTitan()) == "vanguard")
-						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", GetVanguardCoreIcon( ent ))
-					else
-						RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", GetWeaponInfoFileKeyFieldAsset_WithMods_Global( weapon.GetWeaponClassName(), weapon.GetMods(), "hud_icon" ))
-					
-					Hud_GetChild( entityBar, "Core" ).Show()
-
-					
-
-				}
-				else
-					Hud_GetChild( entityBar, "Core" ).Hide()
-
-				if (IsValid( soul )) {
-					// Using, countdown
-					if (TitanCoreInUse( ent )) {
-						Hud_GetChild( entityBar, "CoreLabel" ).Show()
-						Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%1.1f", soul.GetTitanSoulNetFloat( "coreExpireFrac" )))
-						Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
-					}
-					// Preparing
-					else if (!IsCoreChargeAvailable(ent, soul)) {
-						Hud_GetChild( entityBar, "CoreLabel" ).Show()
-						Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%1.1f", soul.GetTitanSoulNetFloat("coreAvailableFrac")))
-						Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), 255, 255, 255, 255 )
-					}
-				}
-			}
-
-			// vanguard
-			if ( GetTitanCharacterName(GetSoulFromPlayer(ent).GetTitan()) == "vanguard" )
-				SetVanguardIcons(entityBar, ent)
 		}
 
+		// pilot stuff
 		else
 		{
-			Hud_GetChild( entityBar, "Smoke" ).Hide()
-			Hud_GetChild( entityBar, "Core" ).Hide()
+
+			// Battery stuff
+			int battery = HasBattery(ent)
+			if (battery > 0) {
+				RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBattery" )), "basicImage",
+						$"rui/hud/battery/battery_capture_friendly")
+				
+			if (battery == 2)
+				RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageBattery" )), "basicImage",
+						$"rui/hud/battery/battery_capture_enemy")
+				Hud_GetChild( entityBar, "EntityImageBattery" ).Show()
+				
+			}
+
+
 
 		}
 	}
@@ -393,111 +682,68 @@ void function SetBarValues(int panelIndex, entity ent)
 	entityBar.Show()
 }
 
-void function ResetVanguardIcons(var entityBar, entity ent) {
-	var upgrade1 = Hud_GetChild( entityBar, "VanguardUpgrade1" )
-	var upgrade2 = Hud_GetChild( entityBar, "VanguardUpgrade2" )
-	var upgrade3 = Hud_GetChild( entityBar, "VanguardUpgrade3" )
-
-	upgrade1.Hide()
-	upgrade2.Hide()
-	upgrade3.Hide()
+void function ResetVanguardIcons(var entityBar) {
+	array upgradeArr = [
+		Hud_GetChild(entityBar, "VanguardUpgrade0"),
+		Hud_GetChild(entityBar, "VanguardUpgrade1"),
+		Hud_GetChild(entityBar, "VanguardUpgrade2"), 
+		Hud_GetChild(entityBar, "VanguardUpgrade3")
+]
+	foreach (var upgrade in upgradeArr) {
+		upgrade.Hide()
+	}
 }
 
 // TODO: Refine this func.
 void function SetVanguardIcons(var entityBar, entity ent)
 {
 
-	ResetVanguardIcons(entityBar, ent)
-	var upgrade1 = Hud_GetChild( entityBar, "VanguardUpgrade1" )
-	var upgrade2 = Hud_GetChild( entityBar, "VanguardUpgrade2" )
-	var upgrade3 = Hud_GetChild( entityBar, "VanguardUpgrade3" )
-
-
+	ResetVanguardIcons(entityBar)
 	entity soul = ent.GetTitanSoul()
-
 	if (!IsValid(soul)) {
 		return
 	}
-		int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
-		if ( currentUpgradeCount >= 0 )
-		{
-			// $"rui/titan_loadout/passive/monarch_core_arc_rounds"
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) )  // Arc Rounds
-			{
-				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
-				GetItemImage( "pas_vanguard_core1" ) )
-			}
-			// $"rui/titan_loadout/passive/monarch_core_missile_racks"
 
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) ) //Missile Racks
-			{
-				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
-				GetItemImage( "pas_vanguard_core2" ) )
-			}
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) ) //Energy Transfer
-			{
-				RuiSetImage( Hud_GetRui(upgrade1), "basicImage",
-				GetItemImage( "pas_vanguard_core3" ) )
-			}
-		}
-		if ( currentUpgradeCount >= 1 )
-		{
-			upgrade1.Show()
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE4 ) )  // Rapid Rearm
-			{
-				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
-				GetItemImage( "pas_vanguard_core4" ) )
-			}
-			// $"rui/titan_loadout/passive/monarch_core_maelstrom"
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE5 ) ) //Maelstrom
-			{
-				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
-				GetItemImage( "pas_vanguard_core5" ) )
-			}
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE6 ) ) //Energy Field
-			{
-				RuiSetImage( Hud_GetRui(upgrade2), "basicImage",
-				GetItemImage( "pas_vanguard_core6" ) )
-			}
-		}
-		if ( currentUpgradeCount >= 2 )
-		{
-			upgrade2.Show()
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE7 ) )  // Multi-Target Missiles
-			{
-				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
-				GetItemImage( "pas_vanguard_core7" ) )
-			}
-			// $"rui/titan_loadout/passive/monarch_core_superior_chassis"
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE8 ) ) //Superior Chassis
-			{
-				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
-				GetItemImage( "pas_vanguard_core8" ) )
-			}
-			else if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE9 ) ) //XO-16 Battle Rifle
-			{
-				RuiSetImage( Hud_GetRui(upgrade3), "basicImage",
-				GetItemImage( "pas_vanguard_core9" ) )
-			}
-		}
-		if ( currentUpgradeCount > 2 )
-		{
-			upgrade3.Show()
-		}
+	array upgradeArr = [
+		Hud_GetChild(entityBar, "VanguardUpgrade0"),
+		Hud_GetChild(entityBar, "VanguardUpgrade1"),
+		Hud_GetChild(entityBar, "VanguardUpgrade2"), 
+		Hud_GetChild(entityBar, "VanguardUpgrade3")
+]
 
+	int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
 
+	for (int i = 1; i <= min(currentUpgradeCount, 3); i++) {
+		RuiSetImage(Hud_GetRui(upgradeArr[i]), "basicImage", GetVanguardCoreIcon(ent, i))
+		upgradeArr[i].Show()
+	}
 
+	RuiSetImage(Hud_GetRui(upgradeArr[0]), "basicImage", GetVanguardCoreIcon(ent, 0))
+	upgradeArr[0].Show()
 }
 
 
-asset function GetVanguardCoreIcon( entity player, int countOffset = 0 )
+asset function GetVanguardCoreIcon( entity player, int index = 1 )
 {
-	Assert( player.IsTitan() )
+	Assert( player.IsPlayer() )
+	GetVanguardNextUpgradeIcon(player)
+	PlayerInfo playerInfo = GetPlayerInfo(player)
 
-	if ( !IsConnected() ) //Persistence isn't available when we disconnect
-		return $""
 
-	return GetVanguardNextUpgradeIcon(player)
+	switch (index) {
+		case 0:
+			return playerInfo.vanguardCoreIcon0; //Apex
+		case 1:
+			return playerInfo.vanguardCoreIcon1;
+		case 2:
+			return playerInfo.vanguardCoreIcon2;
+		case 3:
+			return playerInfo.vanguardCoreIcon3;
+		default:
+			break;
+	}
+
+	return Dev_GetPlayerSettingAssetByKeyField_Global( "titan_atlas_vanguard", "core_building_icon" )
 }
 
 asset function GetVanguardNextUpgradeIcon(entity ent) {
@@ -506,34 +752,67 @@ asset function GetVanguardNextUpgradeIcon(entity ent) {
 		return $""
 		
 	int currentUpgradeCount = soul.GetTitanSoulNetInt( "upgradeCount" )
+	PlayerInfo playerInfo = GetPlayerInfo(ent)
+	
+	asset apex = $""
+	entity weapon = ent.GetMainWeapons()[0]
+	entity offhandWeapon = ent.GetOffhandWeapon( OFFHAND_RIGHT )
+	
+	// Apex
+	if ( IsValid( weapon ) && !PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) && ( weapon.HasMod( "arc_rounds" ) || weapon.HasMod( "arc_rounds_with_battle_rifle" ) ) )
+		apex = GetItemImage( "pas_vanguard_core1" )
+	if ( IsValid( offhandWeapon ) && !PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) && ( offhandWeapon.HasMod( "missile_racks" ) || offhandWeapon.HasMod( "upgradeCore_MissileRack_Vanguard" ) ) )
+		apex = GetItemImage( "pas_vanguard_core2" )
+	
+	offhandWeapon = ent.GetOffhandWeapon( OFFHAND_LEFT )
+	if ( IsValid( offhandWeapon ) && !PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) && ( offhandWeapon.HasMod( "energy_transfer" ) || offhandWeapon.HasMod( "energy_field_energy_transfer" ) ) )
+		apex = GetItemImage( "pas_vanguard_core3" )
+	playerInfo.vanguardCoreIcon0 = apex
+	
+	// common
+	asset icon = Dev_GetPlayerSettingAssetByKeyField_Global( "titan_atlas_vanguard", "core_building_icon" )
+	if (currentUpgradeCount >= 0) {
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) )  // Arc Rounds
+			icon = GetItemImage( "pas_vanguard_core1" )
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) ) //Missile Racks
+			icon = GetItemImage( "pas_vanguard_core2" )
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) ) //Energy Transfer
+			icon = GetItemImage( "pas_vanguard_core3" )
+		playerInfo.vanguardCoreIcon1 = icon
+	}
+
+	if (currentUpgradeCount >= 1) {
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE4 ) )  // Rapid Rearm
+			icon = GetItemImage( "pas_vanguard_core4" )
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE5 ) ) //Maelstrom
+			icon = GetItemImage( "pas_vanguard_core5" )
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE6 ) ) //Energy Field
+			icon = GetItemImage( "pas_vanguard_core6" ) 
+		playerInfo.vanguardCoreIcon2 = icon
+	}
+
+	if (currentUpgradeCount >= 2) {
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE7 ) )  // Multi-Target Missiles
+			icon = GetItemImage( "pas_vanguard_core7" ) 
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE8 ) ) //Superior Chassis
+			icon = GetItemImage( "pas_vanguard_core8" ) 
+		if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE9 ) ) //XO-16 Battle Rifle
+			icon = GetItemImage( "pas_vanguard_core9" )
+		playerInfo.vanguardCoreIcon3 = icon
+	}
+
+
+	
+	// printt(ent.GetPlayerName(), "currentUpgradeCount:", currentUpgradeCount)
 	switch (currentUpgradeCount) {
 		case 0:
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE1 ) )  // Arc Rounds
-				return GetItemImage( "pas_vanguard_core1" )
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE2 ) ) //Missile Racks
-				return GetItemImage( "pas_vanguard_core2" )
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE3 ) ) //Energy Transfer
-				return GetItemImage( "pas_vanguard_core3" )
-			break;
+			return playerInfo.vanguardCoreIcon1
 		case 1:
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE4 ) )  // Rapid Rearm
-				return GetItemImage( "pas_vanguard_core4" )
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE5 ) ) //Maelstrom
-				return GetItemImage( "pas_vanguard_core5" )
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE6 ) ) //Energy Field
-				return GetItemImage( "pas_vanguard_core6" ) 
-			break;
+			return playerInfo.vanguardCoreIcon2
 		case 2:
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE7 ) )  // Multi-Target Missiles
-				return GetItemImage( "pas_vanguard_core7" ) 
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE8 ) ) //Superior Chassis
-				return GetItemImage( "pas_vanguard_core8" ) 
-			if ( PlayerHasPassive( ent, ePassives.PAS_VANGUARD_CORE9 ) ) //XO-16 Battle Rifle
-				return GetItemImage( "pas_vanguard_core9" )
-			break;
-			default:
-				break;
+			return playerInfo.vanguardCoreIcon3
 		}
+
 	return Dev_GetPlayerSettingAssetByKeyField_Global( "titan_atlas_vanguard", "core_building_icon" )
 	
 }
@@ -625,3 +904,523 @@ void function ClearScoreInWave(int pointValue,entity player)
 	}
 	file.waveScores[name] = player.GetPlayerGameStat( PGS_DETONATION_SCORE ) - file.waveScores[name]
 }
+
+int function HasBattery (entity ent) {
+
+	if ( ent.IsPlayer() )
+	{
+		array<entity> batteries = GetClientEntArrayBySignifier( "item_titan_battery" )
+		foreach ( entity battery in batteries )
+		{
+			entity batteryParent = battery.GetParent()
+			if ( batteryParent == ent )
+			{
+				// printt(ent.GetPlayerName(), "Has battery,", battery, " with class ", battery.GetClassName())
+				// C_HealthKit
+				if (IsAmpedBattery(battery)) 
+					return 2
+				// printt("battery.GetSkin()", battery.GetSkin())
+				return 1
+			}
+		}
+	}
+
+	return 0
+}
+
+void
+function BlingBling(var aHudElement, vector color1, vector color2, float between = 0.4, float duration = 1.0, int alpha1 = 255, int alpha2 = 255)
+{
+	float time = 0
+	bool isColor1 = true
+
+	while (time <= duration) {
+		if (isColor1) {
+			RuiSetFloat3( Hud_GetRui(aHudElement), "basicImageColor", color1 )
+			try {
+				Hud_SetColor( aHudElement, color1.x, color1.y, color1.z, alpha1 )
+			} catch (exception){
+				printt("BlingBling", exception)
+			} 
+		}
+		else
+		{
+			RuiSetFloat3( Hud_GetRui(aHudElement), "basicImageColor", color2 )
+			try {
+				Hud_SetColor( aHudElement, color2.x, color2.y, color2.z, alpha2 )
+			} catch (exception2){
+				printt("BlingBling", exception2)
+				
+			}
+		}
+
+		isColor1 = !isColor1
+		wait between
+		time += between
+	}
+}
+
+void function PrintPlayerInfo(PlayerInfo playerInfo) {
+	printt("-------PlayerInfo--------")
+	printt("---Player:", playerInfo.playerName)
+	printt("---titanClass:", playerInfo.titanClass)
+	printt("---titanCoreIcon:", playerInfo.titanCoreIcon)
+
+	printt("\n")
+
+	printt("---vanguardCoreIcon0:", playerInfo.vanguardCoreIcon0)
+	printt("---vanguardCoreIcon1:", playerInfo.vanguardCoreIcon1)
+	printt("---vanguardCoreIcon2:", playerInfo.vanguardCoreIcon2)
+	printt("---vanguardCoreIcon3:", playerInfo.vanguardCoreIcon3)
+
+	printt("\n")
+
+	printt("---color:", playerInfo.color)
+	printt("---bar:", playerInfo.bar)
+
+	printt("\n")
+
+}
+
+void function SetPlayerBar(entity player, var bar)
+{
+	PlayerInfo playerInfo = GetPlayerInfo(player)
+	playerInfo.bar = bar
+}
+
+PlayerInfo function GetPlayerInfo(entity player) {
+	PlayerInfo playerInfo
+	if (!player.IsPlayer() || !IsValid(player)) 
+		return playerInfo
+	string name = player.GetPlayerName()
+	if (!(name in file.playerInfos)) 
+		file.playerInfos[name] <- playerInfo
+	playerInfo.playerName = name
+
+	// PrintPlayerInfo(file.playerInfos[name])
+	return file.playerInfos[name]
+}
+
+string function GetPlayerTitanClass(entity player) {
+	if (!player.IsPlayer() || !IsValid(player)) 
+		return ""
+		
+	PlayerInfo playerInfo = GetPlayerInfo(player)
+
+	if (playerInfo.titanClass != "") 
+		return playerInfo.titanClass
+	
+	if (player.IsTitan()) 
+		playerInfo.titanClass = GetTitanCharacterName(player)
+	else if (IsValid(player.GetPetTitan()))
+		playerInfo.titanClass = GetTitanCharacterName(player.GetPetTitan())
+
+	
+	return playerInfo.titanClass
+} 
+
+asset function GetPlayerTitanIcon(entity player)
+{
+	if (!player.IsPlayer() || !IsValid(player)) 
+		return $""
+	
+	string Titanclass = GetPlayerTitanClass(player)
+
+	if (Titanclass == "") 
+		return $"rui/hud/earn_meter/titan_building"
+
+	return GetIconForTitanClass(Titanclass)
+}
+
+asset function GetPlayerCoreIcon(entity player)
+{
+	if (!player.IsPlayer() || !IsValid(player)) 
+		return $""
+	
+	string Titanclass = GetPlayerTitanClass(player)
+	PlayerInfo playerInfo = GetPlayerInfo(player)
+
+	if (GetPlayerTitanClass(player) == "vanguard" && player.IsTitan()) {
+		playerInfo.titanCoreIcon = GetVanguardNextUpgradeIcon(player)
+	}
+
+	if (playerInfo.titanCoreIcon != $"") 
+		return playerInfo.titanCoreIcon
+
+	entity titan
+	var functionref(entity) GetIcon = function(entity ent): (player, playerInfo)
+	{
+		entity weapon = ent.GetOffhandWeapon( OFFHAND_EQUIPMENT )
+		if (GetPlayerTitanClass(player) == "vanguard")
+			playerInfo.titanCoreIcon = GetVanguardNextUpgradeIcon(player)
+		else
+			playerInfo.titanCoreIcon = GetWeaponInfoFileKeyFieldAsset_WithMods_Global(weapon.GetWeaponClassName(), weapon.GetMods(), "hud_icon")
+	
+	}
+
+	if (player.IsTitan()) 
+		GetIcon(player)
+	else if (IsValid(player.GetPetTitan()))
+		GetIcon(player.GetPetTitan())
+	// else
+	// 	return $"rui/hud/earn_meter/core_ready"
+
+
+	
+	return playerInfo.titanCoreIcon
+}
+
+bool function HasTitan(entity player) {
+	return player.IsTitan() || IsValid(player.GetPetTitan())
+}
+
+// PORTED FORM void function InitOffhandRui( var rui, entity player, entity weapon )
+void function UpdateAbilityHud( var rui, entity player)
+{
+	
+	entity titan, soul, weapon;
+	if (player.IsTitan()) 
+	{
+		titan = player;
+		soul = player.GetTitanSoul()
+	}
+	else if (IsValid(player.GetPetTitan()))
+	{
+		titan = player.GetPetTitan();
+		soul = titan.GetTitanSoul()
+	}
+
+	if (IsValid(titan) && IsValid(soul)) {
+		weapon = titan.GetOffhandWeapon( OFFHAND_EQUIPMENT )
+	}
+
+	RuiSetGameTime( rui, "hintTime", Time() )
+
+	RuiSetBool( rui, "isTitan", player.IsTitan() )
+	RuiSetBool( rui, "isVisible", true )
+	RuiSetBool( rui, "isReverseCharge", false )
+
+	RuiSetFloat( rui, "chargeFrac", 0.0 )
+	RuiSetFloat( rui, "useFrac", 0.0 )
+	RuiSetFloat( rui, "chargeMaxFrac", 1.0 )
+	RuiSetFloat( rui, "minFireFrac", 1.0 )
+	RuiSetInt( rui, "segments", 1 )
+	RuiSetFloat( rui, "refillRate", 1 ) // default to 1 to preserve default behavior. some abilities draw the refillRecharge, even without a rate setting
+
+
+
+	RuiSetFloat( rui, "chargeFracCaution", 0.0 )
+	RuiSetFloat( rui, "chargeFracAlert", 0.0 )
+	RuiSetFloat( rui, "chargeFracAlertSpeed", 16.0 )
+	RuiSetFloat( rui, "chargeFracAlertScale", 1.0 )
+
+	if (IsValid(weapon)) {
+		float coreExpireFrac = soul.GetTitanSoulNetFloat( "coreExpireFrac" )
+		float coreAvailableFrac = soul.GetTitanSoulNetFloat( "coreAvailableFrac" )
+
+		RuiSetImage( rui, "hudIcon", GetPlayerCoreIcon(player) )
+
+		RuiSetFloat( rui, "chargeFrac",  coreAvailableFrac)
+		RuiSetFloat( rui, "readyFrac", 0.0 )
+		RuiSetFloat( rui, "dryfireFrac", 0.0 )
+
+	}
+	else if(!HasTitan(player))
+	{
+		RuiSetImage( rui, "hudIcon", GetPlayerTitanIcon(player) )
+
+
+		// RuiSetInt( rui, "segments", ammoClipSize / ammoPerShot )
+
+		RuiSetFloat( rui, "chargeFrac",  player.GetPlayerNetFloat( EARNMETER_OWNEDFRAC ))
+		RuiSetFloat( rui, "readyFrac", 0.0 )
+
+	}
+}
+
+
+void function InitOffhandRui( var rui, entity player, entity weapon )
+{
+	RuiSetGameTime( rui, "hintTime", Time() )
+
+	RuiSetBool( rui, "isTitan", player.IsTitan() )
+	RuiSetBool( rui, "isVisible", true )
+	RuiSetBool( rui, "isReverseCharge", false )
+
+	RuiSetFloat( rui, "chargeFrac", 0.0 )
+	RuiSetFloat( rui, "useFrac", 0.0 )
+	RuiSetFloat( rui, "chargeMaxFrac", 1.0 )
+	RuiSetFloat( rui, "minFireFrac", 1.0 )
+	RuiSetInt( rui, "segments", 1 )
+	RuiSetFloat( rui, "refillRate", 1 ) // default to 1 to preserve default behavior. some abilities draw the refillRecharge, even without a rate setting
+
+	RuiTrackImage( rui, "hudIcon", weapon, RUI_TRACK_WEAPON_HUD_ICON )
+
+	RuiTrackFloat( rui, "readyFrac", weapon, RUI_TRACK_WEAPON_READY_TO_FIRE_FRACTION )
+	RuiTrackFloat( rui, "dryfireFrac", weapon, RUI_TRACK_WEAPON_DRYFIRE_FRACTION )
+
+	RuiSetFloat( rui, "chargeFracCaution", 0.0 )
+	RuiSetFloat( rui, "chargeFracAlert", 0.0 )
+	RuiSetFloat( rui, "chargeFracAlertSpeed", 16.0 )
+	RuiSetFloat( rui, "chargeFracAlertScale", 1.0 )
+
+	switch ( weapon.GetWeaponInfoFileKeyField( "cooldown_type" ) )
+	{
+		case "ammo":
+			int ammoClipSize = weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size )
+			int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+			int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+
+			RuiSetFloat( rui, "minFireFrac", float (  ammoMinToFire ) / float ( ammoClipSize ) )
+			RuiSetInt( rui, "segments", ammoClipSize / ammoPerShot )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CLIP_AMMO_FRACTION )
+
+			RuiSetFloat( rui, "refillRate", weapon.GetWeaponSettingFloat( eWeaponVar.regen_ammo_refill_rate ) )
+			break
+
+		case "ammo_swordblock":
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_STOCKPILE_REGEN_FRAC )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "minFireFrac", 0.0 )
+
+			RuiSetFloat( rui, "chargeFracCaution", 0.6 )
+			RuiSetFloat( rui, "chargeFracAlert", 0.0 )
+			break
+
+		case "ammo_alert":
+			RuiSetFloat( rui, "chargeFrac", 0.0 )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "minFireFrac", 0.0 )
+
+			RuiSetFloat( rui, "chargeFracCaution", 0.01 )
+			RuiSetFloat( rui, "chargeFracAlert", -1.0 )
+			RuiSetFloat( rui, "chargeFracAlertSpeed", 5.0 )
+			RuiSetFloat( rui, "chargeFracAlertScale", 0.6 )
+			break
+
+		case "ammo_instant":
+		case "ammo_deployed":
+			int ammoClipSize = weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size )
+			int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+			int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+
+			RuiSetFloat( rui, "minFireFrac", float (  ammoMinToFire ) / float ( ammoClipSize ) )
+			RuiSetInt( rui, "segments", ammoClipSize / ammoPerShot )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CLIP_AMMO_FRACTION )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+
+			RuiSetFloat( rui, "refillRate", weapon.GetWeaponSettingFloat( eWeaponVar.regen_ammo_refill_rate ) )
+			break
+
+		case "ammo_per_shot":
+			int ammoClipSize = weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size )
+			int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+			int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+
+			RuiSetFloat( rui, "minFireFrac", float (  ammoMinToFire ) / float ( ammoClipSize ) )
+			RuiSetInt( rui, "segments", 1 )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CLIP_AMMO_FRACTION )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+
+			RuiSetFloat( rui, "refillRate", weapon.GetWeaponSettingFloat( eWeaponVar.regen_ammo_refill_rate ) )
+			break
+
+		case "ammo_timed":
+			int ammoClipSize = weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size )
+			int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+			int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+
+			RuiSetFloat( rui, "minFireFrac", float (  ammoMinToFire ) / float ( ammoClipSize ) )
+			RuiSetInt( rui, "segments", ammoClipSize / ammoPerShot )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CLIP_AMMO_FRACTION )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+
+			RuiTrackFloat( rui, "useFrac", weapon, RUI_TRACK_STATUS_EFFECT_SEVERITY, eStatusEffect.simple_timer )
+
+			RuiSetFloat( rui, "refillRate", weapon.GetWeaponSettingFloat( eWeaponVar.regen_ammo_refill_rate ) )
+			break
+
+		case "shared_energy":
+			int curCost = weapon.GetWeaponCurrentEnergyCost() // 350
+
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "chargeMaxFrac", float( curCost ) )
+			RuiTrackFloat( rui, "chargeFrac", player, RUI_TRACK_PLAYER_SHARED_ENERGY )
+			break
+
+		case "shared_energy_drain":
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "minFireFrac", 0.0 )
+			RuiTrackFloat( rui, "chargeFrac", player, RUI_TRACK_PLAYER_SHARED_ENERGY )
+			RuiSetFloat( rui, "chargeMaxFrac", float( ION_ENERGY_MAX ) )
+			break
+
+		case "vortex_drain":
+			RuiSetBool( rui, "isReverseCharge", true )
+			RuiSetFloat( rui, "chargeFrac", 1.0 )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "minFireFrac", 0.0 )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+			break
+
+		case "charged_shot":
+			RuiSetBool( rui, "isReverseCharge", true )
+			RuiSetFloat( rui, "chargeFrac", 1.0 )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiSetFloat( rui, "minFireFrac", 0.2 )
+
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+			break
+
+		case "chargeFrac":
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+			break
+
+		case "smart":
+			RuiSetBool( rui, "isReverseCharge", true )
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+			RuiSetFloat( rui, "readyFrac", 0.0 )
+			RuiTrackFloat( rui, "dryfireFrac", weapon, RUI_TRACK_WEAPON_DRYFIRE_FRACTION )
+			break
+
+		case "debug":
+			RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+			RuiTrackFloat( rui, "readyFrac", weapon, RUI_TRACK_WEAPON_READY_TO_FIRE_FRACTION )
+			//RuiTrackFloat( rui, "dryfireFrac", weapon, RUI_TRACK_WEAPON_DRYFIRE_FRACTION )
+			RuiTrackFloat( rui, "dryfireFrac", weapon, RUI_TRACK_WEAPON_SMART_AMMO_LOCK_FRACTION )
+			break
+
+		case "grapple":
+			int ammoClipSize = 100
+			float ammoMinToFire = weapon.GetWeaponSettingFloat( eWeaponVar.grapple_power_required )
+
+			RuiSetFloat( rui, "minFireFrac", ammoMinToFire / float ( ammoClipSize ) )
+			RuiSetInt( rui, "segments", int( ammoClipSize / ammoMinToFire ) )
+			RuiTrackFloat( rui, "chargeFrac", player, RUI_TRACK_PLAYER_GRAPPLE_POWER )
+			break
+
+		default:
+			float refillRate = weapon.GetWeaponSettingFloat( eWeaponVar.regen_ammo_refill_rate )
+
+			if ( refillRate > 0 )
+			{
+				//printt( "HUD: ", weapon.GetWeaponClassName(), "using", "refillRate" )
+				int ammoClipSize = weapon.GetWeaponSettingInt( eWeaponVar.ammo_clip_size )
+				int ammoPerShot = weapon.GetWeaponSettingInt( eWeaponVar.ammo_per_shot )
+				int ammoMinToFire = weapon.GetWeaponSettingInt( eWeaponVar.ammo_min_to_fire )
+
+				RuiSetFloat( rui, "minFireFrac", float (  ammoMinToFire ) / float ( ammoClipSize ) )
+				RuiSetInt( rui, "segments", ammoClipSize / ammoPerShot )
+
+				RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CLIP_AMMO_FRACTION )
+			}
+			else
+			{
+				float chargeTime = weapon.GetWeaponSettingFloat( eWeaponVar.charge_time )
+				if ( chargeTime == 0 )
+				{
+					//printt( "HUD: ", weapon.GetWeaponClassName(), "using", "chargeTime == 0" )
+					float fireDuration = weapon.GetWeaponSettingFloat( eWeaponVar.fire_duration )
+					printt( weapon.GetWeaponClassName(), fireDuration )
+					RuiSetBool( rui, "isReverseCharge", true )
+					RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_READY_TO_FIRE_FRACTION )
+				}
+				else
+				{
+					//printt( "HUD: ", weapon.GetWeaponClassName(), "using", "chargeTime" )
+					RuiTrackFloat( rui, "chargeFrac", weapon, RUI_TRACK_WEAPON_CHARGE_FRACTION )
+				}
+			}
+			break
+	}
+}
+void function UpdateOffhandRuiVisibility( var rui, string hintText )
+{
+	if ( GetConVarInt( "hud_setting_showButtonHints" ) != 0 )
+		RuiSetString( rui, "hintText", hintText )
+	else
+		RuiSetString( rui, "hintText", "" )
+}
+
+int function GetPlayerAgeisLevel(entity player) {
+	entity soul = GetPlayerTitanSoul(player)
+	entity titan
+	if (!IsValid(soul)) 
+		return -1
+	
+	titan = soul.GetTitan()
+	if (!IsValid(titan)) 
+		return -1
+
+	
+
+	PlayerInfo playerInfo = GetPlayerInfo(player)
+	switch (GetPlayerTitanClass(player)) {
+		case "legion":
+			entity shieldWeapon = player.GetOffhandWeapon( OFFHAND_LEFT )
+			if (IsValid(shieldWeapon) && shieldWeapon.HasMod("fd_gun_shield_redirect")) {
+				playerInfo.ageisLevel = playerInfo.ageisLevel < 11 ? 11 : playerInfo.ageisLevel
+			}
+
+			entity mainWeapon = player.GetMainWeapons()[0]
+			if (IsValid(mainWeapon) && mainWeapon.HasMod("fd_piercing_shots")) {
+				playerInfo.ageisLevel = playerInfo.ageisLevel < 2 ? 2 : playerInfo.ageisLevel
+			}
+			if (IsValid(mainWeapon) && mainWeapon.HasMod("fd_gun_shield_redirect")) {
+				playerInfo.ageisLevel = playerInfo.ageisLevel < 11 ? 11 : playerInfo.ageisLevel
+			}
+			
+			if (IsValid(mainWeapon) && mainWeapon.HasMod("fd_LongRangePowerShot")) {
+				playerInfo.ageisLevel = playerInfo.ageisLevel < 17 ? 17 : playerInfo.ageisLevel
+			}
+			if (IsValid(mainWeapon) && mainWeapon.HasMod("fd_CloseRangePowerShot")) {
+				playerInfo.ageisLevel = playerInfo.ageisLevel < 8 ? 8 : playerInfo.ageisLevel
+			}
+			break;
+		case "ion":
+				
+				break
+	
+			case "scorch":
+
+				break
+	
+			case "northstar":
+				
+				break
+	
+			case "ronin":
+				
+				break
+	
+			case "tone":
+				
+				break
+
+	
+			case "vanguard":
+				break
+		default:
+			break;
+	}
+
+	return playerInfo.ageisLevel
+}
+
+entity function GetPlayerTitanSoul(entity player)
+{
+	if (player.IsTitan()) {
+		return player.GetTitanSoul()
+	}
+	if (IsValid(player.GetPetTitan())) {
+		return player.GetPetTitan().GetTitanSoul()
+	}
+
+	return player.GetTitanSoul()
+}
+

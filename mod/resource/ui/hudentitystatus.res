@@ -23,7 +23,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar0
 		pin_corner_to_sibling		TOP_RIGHT
@@ -39,7 +39,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar1
 		pin_corner_to_sibling		TOP_RIGHT
@@ -55,7 +55,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar2
 		pin_corner_to_sibling		TOP_RIGHT
@@ -71,7 +71,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar3
 		pin_corner_to_sibling		TOP_RIGHT
@@ -87,7 +87,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar4
 		pin_corner_to_sibling		TOP_RIGHT
@@ -103,7 +103,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar5
 		pin_corner_to_sibling		TOP_RIGHT
@@ -119,7 +119,7 @@
 		tall				90
 		visible				0
 		zpos				1012
-		ypos				-30
+		ypos				-25
 
 		pin_to_sibling				EntityStatusBar6
 		pin_corner_to_sibling		TOP_RIGHT
