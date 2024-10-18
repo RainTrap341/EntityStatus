@@ -3,7 +3,7 @@
 	"Description": "Ultimate solution for Frontier-Defense gamemode.",
 	"LoadPriority": 3,
 	"RequiredOnClient": false,
-	"Version": "1.2.0",
+	"Version": "1.5.0",
 	"Scripts": [
 		{
 			"Path": "mp_entity_status.gnut",
@@ -11,6 +11,206 @@
 			"ClientCallback": {
 				"After": "InitMpEntityStatus"
 			}
+		},
+		{
+			"Path": "ui/modsettings_entity_status.nut",
+			"RunOn": "UI",
+			"UICallback": {
+				"Before": "EntityStatus_ModSettings_Init"
+			}
 		}
-	]
+	],
+	"Dependencies": {
+        "PLAYER_HAS_MOD_SETTINGS": "Mod Settings",
+        "PLAYER_HAS_NS_CLIENT": "Northstar.Client",
+        "PLAYER_HAS_MOD_SETTINGS_PLUS": "Mod Settings Plus",
+        "PLAYER_HAS_MOD_MANAGER": "ModManager"
+    },
+	"ConVars":
+	[
+		{
+			"Name": "EntityStatus.panel_position",
+			"DefaultValue": "50 400 4000",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.panel_rotation",
+			"DefaultValue": "0",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.panel_bgcolor",
+			"DefaultValue": "0 0 0",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.panel_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+
+		
+		{
+			"Name": "EntityStatus.title_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+		
+		{
+			"Name": "EntityStatus.title_content",
+			"DefaultValue": "Teammates",
+			"Flags": 16777216
+		},
+
+		{
+			"Name": "EntityStatus.bar_gap",
+			"DefaultValue": "-25",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.bar_tall",
+			"DefaultValue": "90",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.bar_wide",
+			"DefaultValue": "300",
+			"Flags": 16777216
+		}
+
+		,
+		{
+			"Name": "EntityStatus.panel_padding_top",
+			"DefaultValue": "100",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.panel_padding_right",
+			"DefaultValue": "50",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.panel_padding_bottom",
+			"DefaultValue": "100",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.panel_padding_left",
+			"DefaultValue": "50",
+			"Flags": 16777216
+		},
+
+
+
+		{
+			"Name": "EntityStatus.avatar_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+
+
+		{
+			"Name": "EntityStatus.health_bar_label_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+
+
+		{
+			"Name": "EntityStatus.money_label_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		}
+
+
+		,
+		{
+			"Name": "EntityStatus.health_common_fgcolor",
+			"DefaultValue": "87 151 219 255",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.health_local_fgcolor",
+			"DefaultValue": "254 184 0 255",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.health_party_fgcolor",
+			"DefaultValue": "91 255 31 255",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.health_doom_fgcolor",
+			"DefaultValue": "246 134 40 255",
+			"Flags": 16777216
+		}
+		,
+		{
+			"Name": "EntityStatus.health_shield_fgcolor",
+			"DefaultValue": "87 255 255 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.health_autotitan_fgcolor",
+			"DefaultValue": "161 214 0 255",
+			"Flags": 16777216
+		}
+
+
+		// Core
+		,
+		{
+			"Name": "EntityStatus.core_label_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_label_core_building_fgcolor",
+			"DefaultValue": "91 255 31 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_label_core_ready_fgcolor",
+			"DefaultValue": "254 184 0 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_label_titan_building_fgcolor",
+			"DefaultValue": "91 255 31 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_progress_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_progress_fgcolor",
+			"DefaultValue": "255 255 255 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_bg_alpha",
+			"DefaultValue": "1.0",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.core_bgcolor",
+			"DefaultValue": "0 0 0 255",
+			"Flags": 16777216
+		}
+
+		
+    ],
+    "Localisation": [
+        "resource/localization/entity_status_%language%.txt"
+    ]
 }

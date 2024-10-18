@@ -35,6 +35,29 @@
 		zpos				901
 	}
 
+	BarFillAutotitan
+	{
+
+		ControlName			ImagePanel
+		wide				24
+		tall				5
+
+
+		xpos 				0
+		ypos				0
+		zpos				902
+		image 						"vgui/hud/white"
+		drawColor	"161 214 0 255"
+
+		visible						0
+		scaleImage					1
+
+		pin_to_sibling				EntityImageAutotitan
+		pin_corner_to_sibling		BOTTOM_LEFT
+		pin_to_sibling_corner		BOTTOM_LEFT
+	}
+
+
 	EntityImageBattery
 	{
 		ControlName 			RuiPanel
@@ -188,7 +211,7 @@
 		xpos 						0
 		ypos						3
 		zpos						204
-		wide 						200
+		wide 						195
 		tall 						23
 		//image 						"vgui/hud/coop/wave_callout_strip_lines"
 		//drawColor			"255 255 255 255"
@@ -205,17 +228,18 @@
 	}
 
 
-	BarFillAutotitan
+
+	BarFillShield
 	{
 		ControlName					ImagePanel
 		xpos 						0
-		ypos						8
+		ypos						5
 		zpos						204
-		wide 						200
-		tall 						5
+		wide 						195
+		tall 						2
 		
 		image 						"vgui/hud/white"
-		drawColor	"161 214 0 255"
+		drawColor	"87 255 255 255"
 
 		visible						1
 		scaleImage					1
@@ -225,17 +249,39 @@
 		pin_to_sibling_corner		BOTTOM_LEFT
 	}
 
+	BarFillShieldHeader
+	{
+		ControlName					ImagePanel
+		xpos 						-195
+		ypos						26
+		zpos						203
+		wide 						5
+		tall 						23
+		
+		image 						"vgui/hud/white"
+		drawColor	"87 255 255 255"
+
+		visible						1
+		scaleImage					1
+
+
+		pin_to_sibling				EntityTitle
+		pin_corner_to_sibling		BOTTOM_LEFT
+		pin_to_sibling_corner		BOTTOM_LEFT
+	}
+
+
 	BarFillShadow
 	{
 		ControlName					ImagePanel
 		xpos 						0
 		ypos						3
-		zpos						205
-		wide 						200
+		zpos						203
+		wide 						195
 		tall 						23
 		//image 						"ui/menu/eog/xp_bar_shadow"
 		image 						"vgui/hud/white"
-		drawColor	"128 128 128 80"
+		drawColor	"128 128 128 128"
 
 		visible						1
 		scaleImage					1
@@ -275,7 +321,7 @@
 		labelText				"$00000"
 		auto_tall_tocontents 	1
 		wrap					1
-		xpos						-145
+		xpos						-140
 		ypos						4
 		zpos						1000
 		wide						270
@@ -453,6 +499,28 @@
 	}
 
 	CoreBg
+	{
+		ControlName 			RuiPanel
+		rui 					"ui/basic_image.rpak"
+		basicImage 				"vgui/hud/white"
+
+		drawColor	"0 0 0 90"
+
+		wide				60
+		tall				60
+		visible				1
+		scaleImage			1
+		xpos 				4
+		ypos				4
+		zpos				898
+
+		pin_to_sibling				Core
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		TOP_LEFT
+	}
+
+
+	CoreBgStatic
 	{
 		ControlName 			RuiPanel
 		rui 					"ui/basic_image.rpak"

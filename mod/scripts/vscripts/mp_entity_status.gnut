@@ -106,6 +106,32 @@ struct
 	bool shouldHide = false
 
 	var test
+	var cockpitRui 
+
+	array<entity> targets
+	
+	float panelAlpha
+	float avatarAlpha
+	
+	float healthbarLabelAlpha
+	float moneyLabelAlpha
+	table healthbarCommonFgColor
+	table healthbarLocalFgColor
+	table healthbarPartyFgColor
+	table healthbarDoomFgColor
+	table healthbarShieldFgColor
+	table healthbarAutotitanFgColor
+
+	float coreLabelAlpha
+	table coreLabelCoreBuildingFgColor
+	table coreLabelCoreReadyFgColor
+	table coreLabelTitanBuildingFgColor
+
+	float coreProgressAlpha
+	table coreProgressFgColor
+
+	float coreBgAlpha
+	table coreBgColor
 } file
 
 
@@ -165,7 +191,9 @@ void function TestFunc()
 bool function ShowDrawHud() {
 	if (GameRules_GetGameMode() != FD || file.shouldHide || IsLobby() || file.shouldHide || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating)
 	{
-		return false;
+		// return false
+		return true
+
 	}
 
 	return true
@@ -180,6 +208,7 @@ void function Monitor() {
 	file.entityStatus = HudElement("EntityStatus")
 	HideEntityStatus()
 
+
 	while (true) {
 		WaitFrame()
 
@@ -190,7 +219,6 @@ void function Monitor() {
 		ShowEntityStatus()
 		
 
-
 			
 		for (int i = 0; i < maxSlot; i++) {
 			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
@@ -199,7 +227,9 @@ void function Monitor() {
 
 		file.entityStatus.Show()
 		int i = 0
-		foreach (entity ent in GetTargets()) {
+		file.targets = GetTargets()
+
+		foreach (entity ent in file.targets) {
 			string name = ent.GetPlayerName()
 
 
@@ -220,6 +250,22 @@ void function Monitor() {
 }
 
 array<entity> function GetTargets() {
+	if (GameRules_GetGameMode() != FD) {
+		// return GetPlayerArray().filter(
+		// 	bool function(int index,  entity player)
+		// 	{
+		// 		return player.GetTeam() == GetLocalClientPlayer().GetTeam() ? true : false
+		// 	}
+		// )
+		array<entity> a = []
+		foreach (player in GetPlayerArray()) {
+			if (player.GetTeam() == GetLocalClientPlayer().GetTeam()) {
+				a.append(player)
+			}
+		}
+
+		return a
+	}
 	// return [GetLocalClientPlayer()]
 	return GetPlayerArray()
 }
@@ -262,12 +308,25 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	if ( !ShowDrawHud() ){
 		HideEntityStatus()
+		try {
+			GetLocalClientPlayer().cv.hudCheaterMessage.Hide()
+		} catch (exception){
+			
+		}
 		return
 	}
 	else
 	{
+		LoadModSettings()
 		ShowEntityStatus()
 	}
+
+	try {
+		ShowRUIHUD(ent)
+	} catch (exception){
+		PrintFunc(exception)
+	}
+
 
 	
 	string titleString = ent.IsPlayer() ? ent.GetPlayerName() : ent.GetTargetName()
@@ -287,15 +346,19 @@ void function SetBarValues(int panelIndex, entity ent)
 	// Avatar
 	var avatar = Hud_GetChild( entityBar, "EntityImage" )
 	RuiSetImage( Hud_GetRui(avatar), "basicImage", image)
-	RuiSetFloat( Hud_GetRui(avatar), "basicImageAlpha", 1 )
+	RuiSetFloat( Hud_GetRui(avatar), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
 
-
+	// if (IsValid(ent.GetCockpit())) {
+		
+	// 	RuiSetDrawGroup( Hud_GetRui(avatar), RUI_DRAW_COCKPIT )
+	// }
 
 
 
 	// Thats bad. Core with bg is not that awesome.
 	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", $"rui/titan_loadout/core/titan_core_laser" )
 	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", $"vgui/white" )
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBgStatic" )), "basicImage", $"vgui/white" )
 	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
 
 
@@ -304,6 +367,7 @@ void function SetBarValues(int panelIndex, entity ent)
 	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImage", $"vgui/hud/white")
 	RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageColor", <0,0,0> )
 	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", 0.3 )
+	// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
 
 
 	
@@ -326,10 +390,11 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	// LOCAL/PARTY
 	if (IsPartyMember(ent)) 
-		Hud_SetColor(title, PARTY_R, PARTY_G, PARTY_B, 255)
+		Hud_SetColorWithTable( title, file.healthbarPartyFgColor )
 	if (ent.GetPlayerName() == GetLocalClientPlayer().GetPlayerName()
 	 && ent.GetPlayerName() == GetLocalViewPlayer().GetPlayerName()) 
-		Hud_SetColor( title, LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+	 	Hud_SetColorWithTable( title, file.healthbarLocalFgColor )
+
 	
 
 
@@ -342,10 +407,12 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	var barFill = Hud_GetChild( entityBar, "BarFill" )
 	Hud_SetScaleX( barFill, frac )
-	Hud_SetColor( barFill, FRIENDLY_R, FRIENDLY_G, FRIENDLY_B, 255 )
+	// Hud_SetScaleX( barFill, 0.5 )
+	// Hud_SetScaleX( Hud_GetChild( entityBar, "BarFillShield" ), 0.7 )
  
-	if (ent.IsTitan() && GetDoomedState( ent )) 
-		Hud_SetColor( barFill, BURN_R, BURN_G, BURN_B, 255 )
+	SetBarFillColor(barFill, ent)
+
+
 
 	var barFillShadow = Hud_GetChild( entityBar, "BarFillShadow" )
 	Hud_SetText( Hud_GetChild( entityBar, "BarDesc" ), format("%.0f/%.0f", currentValue, endValue) )
@@ -363,8 +430,17 @@ void function SetBarValues(int panelIndex, entity ent)
 	///////////// COOOOOOOOOOOOOORE
 	Hud_GetChild( entityBar, "CoreLabel" ).Hide()
 	Hud_GetChild( entityBar, "CoreBg" ).Hide()
+	Hud_GetChild( entityBar, "CoreBgStatic" ).Hide()
 	Hud_GetChild( entityBar, "Core" ).Hide()
 	Hud_GetChild( entityBar, "Core0" ).Hide()
+	Hud_GetChild( entityBar, "Smoke" ).Hide()
+	
+	
+	Hud_GetChild( entityBar, "EntityImageAutotitan" ).Hide()
+	Hud_GetChild( entityBar, "BarFillAutotitan" ).Hide()
+	
+	Hud_GetChild( entityBar, "BarFillShield" ).Hide()
+	Hud_GetChild( entityBar, "BarFillShieldHeader" ).Hide()
 
 	// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core0" )), "basicImage", $"rui/menu/dpad_comms/emoji/skull" )
 	// UpdateAbilityHud(Hud_GetRui(Hud_GetChild(entityBar, "Core")), ent)
@@ -373,12 +449,12 @@ void function SetBarValues(int panelIndex, entity ent)
 
 
 	
-	
 	asset coreIcon = GetPlayerCoreIcon(ent)
 	asset titanIcon = GetPlayerTitanIcon(ent)
 	if (coreIcon != $"" && HasTitan(ent)) {
 		Hud_GetChild( entityBar, "Core" ).Show()
 		Hud_GetChild( entityBar, "CoreBg" ).Show()
+		Hud_GetChild( entityBar, "CoreBgStatic" ).Show()
 
 		
 		// RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", coreIcon)
@@ -407,6 +483,7 @@ void function SetBarValues(int panelIndex, entity ent)
 			
 		// printt(ent.GetPlayerName(), "GetShieldHealth:", titan.GetShieldHealth(), ",GetShieldHealthMax():", titan.GetShieldHealthMax())
 		// printt(ent.GetPlayerName(), "Frac:", GetShieldHealthFrac(ent))
+		// printt(ent.GetPlayerName(), "ent.lastShieldHealth:", ent.lastShieldHealth)
 
 
 			// Playertitan core gets more alpha than auto one
@@ -423,15 +500,21 @@ void function SetBarValues(int panelIndex, entity ent)
 			// printt(ent.IsTitan() ? "Titan" : "Pilot", "(",
 			//     ent.GetPlayerName(), ")", "coreAvailableFrac:", coreAvailableFrac, ",coreReadyFrac:", coreReadyFrac)
 
-			RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
-			RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.3 )
+			RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBgStatic" )), "basicImageColor", <file.coreBgColor.r,file.coreBgColor.g,file.coreBgColor.b> )
+			RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <file.coreProgressFgColor.r,file.coreProgressFgColor.g,file.coreProgressFgColor.b> )
+			// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.1 )
+			// Hud_SetAlpha(Hud_GetChild(entityBar, "CoreBg"), 0.2)
+			// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBgStatic" )), "basicImageAlpha", 0.7 )
 			
 			// Using, countdown
 			if (ent.IsTitan() && TitanCoreInUse(ent)) {
 				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", coreAvailableFrac * 100 + 0.5))
-				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				// Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				// Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelCoreBuildingFgColor)
+				Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelCoreReadyFgColor)
+
 				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <180,180,180> )
-				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.7 )
+				// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", 0.7 )
 
 				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <66, 66, 66> )
 				Hud_SetScaleX(Hud_GetChild(entityBar, "CoreBg"), coreAvailableFrac)
@@ -441,8 +524,9 @@ void function SetBarValues(int panelIndex, entity ent)
 			// Preparing
 			else if (!IsCoreChargeAvailable(ent, soul) && coreReadyFrac < 1.0) {
 				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", coreReadyFrac * 100 + 0.5))
-				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), PARTY_R, PARTY_G, PARTY_B, 255 )
-
+				// Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), PARTY_R, PARTY_G, PARTY_B, 255 )
+				
+				Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelCoreBuildingFgColor)
 				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0, 0, 0> )
 				Hud_SetScaleX(Hud_GetChild(entityBar, "CoreBg"), coreReadyFrac)
 
@@ -451,8 +535,10 @@ void function SetBarValues(int panelIndex, entity ent)
 			// Core-ready bling-bling
 			if (IsCoreChargeAvailable(ent, soul)) {
 				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", 100))
-				Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
-				RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 1.0 )
+				// Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelCoreReadyFgColor)
+
+				// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImageAlpha", 1.0 )
 				// Hud_GetChild( entityBar, "CoreLabel" ).Hide()
 
 				// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <66, 66, 66> )
@@ -475,25 +561,43 @@ void function SetBarValues(int panelIndex, entity ent)
 	}
 	
 	// Player has no titan
-	else if (!HasTitan(ent) && titanIcon != $"" && GameRules_GetGameMode() == FD && GetGlobalNetInt("FD_currentWave") > 0)
+	else if (!HasTitan(ent) && titanIcon != $"" && GameRules_GetGameMode() == FD)
 	{
+
+		try {
+			if (GetGlobalNetInt("FD_currentWave") > 0) {
+				
+				// + ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
+				float meter = ent.GetPlayerNetFloat( EARNMETER_EARNEDFRAC )
+				// float meter = ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
 		
-		Hud_GetChild( entityBar, "BarFillAutotitan" ).Hide()
+				Hud_GetChild( entityBar, "Core" ).Show()
+				Hud_GetChild( entityBar, "CoreLabel" ).Show()
+		
+				RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", titanIcon)
+				Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", (meter * 100)+ 0.5))
+				// Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+				Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelTitanBuildingFgColor)
+		
+		
+		
+				// printt(ent.GetPlayerName(), "With EARNMETER_EARNEDFRAC", ent.GetPlayerNetFloat(EARNMETER_EARNEDFRAC),
+				//  "and EARNMETER_OWNEDFRAC", ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC ))
+			}
+		} catch (exception){
+			float meter = ent.GetPlayerNetFloat( EARNMETER_EARNEDFRAC )
 
-		// + ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
-		float meter = ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC )
+			Hud_GetChild( entityBar, "Core" ).Show()
+			Hud_GetChild( entityBar, "CoreLabel" ).Show()
+	
+			RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", titanIcon)
+			Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", (meter * 100)+ 0.5))
 
-		Hud_GetChild( entityBar, "Core" ).Show()
-		Hud_GetChild( entityBar, "CoreLabel" ).Show()
+			Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelTitanBuildingFgColor)
+	
 
-		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", titanIcon)
-		Hud_SetText(Hud_GetChild(entityBar, "CoreLabel"), format("%d", (meter * 100)+ 0.5))
-		Hud_SetColor( Hud_GetChild( entityBar, "CoreLabel" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
-
-
-
-		// printt(ent.GetPlayerName(), "With EARNMETER_EARNEDFRAC", ent.GetPlayerNetFloat(EARNMETER_EARNEDFRAC),
-		//  "and EARNMETER_OWNEDFRAC", ent.GetPlayerNetFloat( EARNMETER_OWNEDFRAC ))
+		}
+		
 	}
 
 
@@ -502,8 +606,7 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	///////////////////////////////////////////// Autotian
 
-	Hud_GetChild( entityBar, "EntityImageAutotitan" ).Hide()
-	Hud_GetChild( entityBar, "BarFillAutotitan" ).Hide()
+
 	if (IsValid(ent.GetPetTitan()))
 	{
 		RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageAutotitan" )), "basicImage",GetPlayerTitanIcon(ent))
@@ -515,10 +618,14 @@ void function SetBarValues(int panelIndex, entity ent)
 		float autoTitanFrac = ent.GetPetTitan().GetHealth().tofloat() / ent.GetPetTitan().GetMaxHealth()
 		Hud_SetScaleX( Hud_GetChild( entityBar, "BarFillAutotitan" ), autoTitanFrac )
 
-		Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), 161, 214, 0, 255 )
+		Hud_SetColorWithTable(Hud_GetChild(entityBar, "BarFillAutotitan"), file.healthbarAutotitanFgColor)
+		
+		// Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), 161, 214, 0, 255 )
 		// Doom color
 		if ( GetDoomedState( ent.GetPetTitan() )) {
-			Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), BURN_R, BURN_G, BURN_B, 255 )
+			Hud_SetColorWithTable(Hud_GetChild(entityBar, "BarFillAutotitan"), file.healthbarDoomFgColor)
+
+			// Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), BURN_R, BURN_G, BURN_B, 255 )
 		}
 		
 		Hud_GetChild( entityBar, "BarFillAutotitan" ).Show()
@@ -527,16 +634,57 @@ void function SetBarValues(int panelIndex, entity ent)
 	else if (ent.IsTitan()) {
 		// player on titan. Shield. ent.GetShieldHealth() is not for player
 		// not available.
-		// entity titan = ent.GetTitanSoul().GetTitan()
-
-		// Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillAutotitan"), float(titan.GetShieldHealth()) / float(titan.GetShieldHealthMax()))
-		// Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), SHIELD_R, SHIELD_G, SHIELD_B, 255 )
+		entity soul = ent.GetTitanSoul()
 		
-		Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillAutotitan"), ent.GetTitanSoul().GetTitanSoulNetFloat( "coreAvailableFrac" ))
-		Hud_SetColor( Hud_GetChild( entityBar, "BarFillAutotitan" ), LOCAL_R, LOCAL_G, LOCAL_B, 255 )
+
+		if (IsValid(soul)) {
+			// Hud_GetChild( entityBar, "BarFillShield" ).Show()
+			// Hud_GetChild( entityBar, "BarFillShieldBg" ).Show()
+			// Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillShield"), float(soul.GetShieldHealth()) / float(soul.GetShieldHealthMax()))
+			
+			float frac = float(soul.GetShieldHealth()) / float(soul.GetShieldHealthMax())
+			const HeaderRatio = 0.99
+	
+			
+			Hud_SetColorWithTable(Hud_GetChild(entityBar, "BarFillShield"), file.healthbarShieldFgColor)
+			// Hud_SetColor( Hud_GetChild( entityBar, "BarFillShield" ), 87, 255, 255, 255 )
+			Hud_GetChild( entityBar, "BarFillShield" ).Show()
+	
+			// HEADER
+			if (frac >= HeaderRatio) {
+				float headerFrac = (frac - HeaderRatio) / (1.0 - HeaderRatio)
+				Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillShieldHeader"), headerFrac)
+				// Hud_SetColor( Hud_GetChild( entityBar, "BarFillShieldHeader" ), 87, 255, 255, 255 )
+				Hud_SetColorWithTable(Hud_GetChild(entityBar, "BarFillShieldHeader"), file.healthbarShieldFgColor)
+				
+				Hud_GetChild( entityBar, "BarFillShieldHeader" ).Show()
+				
+				frac = 1.0
+			}
+			else
+			{
+				frac *= HeaderRatio
+			}
+
+
+			// Hud_GetChild( entityBar, "Money" ).Hide()
+			// if (BoostStoreOpen()) {
+			// 	Hud_SetColorWithTable(Hud_GetChild(entityBar, "Money"), file.healthbarShieldFgColor)
+
+			// 	Hud_SetText(Hud_GetChild(entityBar, "Money"), format("%d/%d %f", soul.GetShieldHealth()), float(soul.GetShieldHealthMax()), frac)
+			// 	Hud_GetChild( entityBar, "Money" ).Show()
+	
+			// 	// printt(titleString, ent.GetPlayerNetInt("FD_money256"), ent.GetPlayerNetInt( "FD_money256" ) * 256)
+			// 	// printt(titleString, ent.GetPlayerNetInt( "FD_money256" ))
+			// 	// printt(titleString, money)
+			// }
+	
+			Hud_SetScaleX(Hud_GetChild(entityBar, "BarFillShield"), frac)
+
+		}
 
 		
-		Hud_GetChild( entityBar, "BarFillAutotitan" ).Show()
+		// RuiTrackFloat( file.cockpitRui, "shieldFrac", player, RUI_TRACK_SHIELD_FRACTION )
 		
 	}
 
@@ -679,7 +827,25 @@ void function SetBarValues(int panelIndex, entity ent)
 	}
 	// SetVanguardIcons(entityBar, ent)
 
+	
+	Hud_SetAlpha(Hud_GetChild( entityBar, "CoreLabel" ), file.avatarAlpha * 255)
+	Hud_SetAlpha(Hud_GetChild( entityBar, "BarDesc" ), file.healthbarLabelAlpha * 255)
+	Hud_SetAlpha(Hud_GetChild( entityBar, "Money" ), file.moneyLabelAlpha * 255)
+	Hud_SetAlpha(Hud_GetChild( entityBar, "BarFillAutotitan" ), file.coreLabelAlpha * 255)
+	// Hud_SetAlpha(Hud_GetChild( entityBar, "CoreBg" ), file.coreProgressAlpha)
+	// Hud_SetAlpha(Hud_GetChild( entityBar, "CoreBgStatic" ), file.coreBgAlpha)
+	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageAlpha", file.coreProgressAlpha * file.panelAlpha)
+	RuiSetFloat(Hud_GetRui(Hud_GetChild(entityBar, "CoreBgStatic")), "basicImageAlpha", file.coreBgAlpha * file.panelAlpha)
+	RuiSetFloat(Hud_GetRui(Hud_GetChild(entityBar, "EntityImageAutotitan")), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
+	
 	entityBar.Show()
+
+
+
+		// Cheater check
+	if (!IsLobby() && GameRules_GetGameMode() != FD) {
+		GetLocalClientPlayer().cv.hudCheaterMessage.Show()
+	}
 }
 
 void function ResetVanguardIcons(var entityBar) {
@@ -1424,3 +1590,182 @@ entity function GetPlayerTitanSoul(entity player)
 	return player.GetTitanSoul()
 }
 
+void function ShowRUIHUD( entity player1 )
+{
+
+	// entity cockpit = player.GetCockpit()
+	if (file.cockpitRui != null) {
+		return
+	}
+
+
+	
+	// create ruis
+	entity player = GetLocalViewPlayer()
+
+	float[2] screenSize = GetScreenSize()
+
+	var topoFullScreen = RuiTopology_CreatePlane( <0,0,0>, <screenSize[0],0,0>, <0,screenSize[1],0>, false )
+
+	
+
+	file.cockpitRui =  RuiCreate( $"ui/ajax_cockpit_base.rpak",topoFullScreen, RUI_DRAW_COCKPIT, 0 )
+	// RuiTopology_UpdatePos( topoFullScreen, lowerScreenPosition, <0, -TITAN_COCKPIT_LOWER_RUI_SCREEN_SQUARE_SIZE, 0>, <0, 0, -(TITAN_COCKPIT_LOWER_RUI_SCREEN_SQUARE_SIZE * TITAN_COCKPIT_LOWER_RUI_SCREEN_HEIGHT_SCALE)> )
+
+	RuiTrackFloat3( file.cockpitRui, "playerOrigin", player, RUI_TRACK_ABSORIGIN_FOLLOW )
+	RuiTrackFloat3( file.cockpitRui, "playerEyeAngles", player, RUI_TRACK_EYEANGLES_FOLLOW )
+	RuiTrackFloat( file.cockpitRui, "healthFrac", player, RUI_TRACK_HEALTH )
+	RuiTrackFloat( file.cockpitRui, "shieldFrac", player, RUI_TRACK_SHIELD_FRACTION )
+	RuiTrackFloat( file.cockpitRui, "dashFrac", player, RUI_TRACK_PLAYER_SUIT_POWER )
+	RuiSetFloat( file.cockpitRui, "ejectManualTimeOut", EJECT_FADE_TIME )
+	RuiSetFloat( file.cockpitRui, "ejectButtonTimeOut", TITAN_EJECT_MAX_PRESS_DELAY )
+	RuiSetGameTime( file.cockpitRui, "ejectManualStartTime", -60.0 )
+	RuiSetGameTime( file.cockpitRui, "ejectButtonPressTime", -60.0 )
+
+
+	string playerSettings = GetLocalViewPlayer().GetPlayerSettings()
+	float health = player.GetPlayerModHealth()
+	float healthPerSegment = GetPlayerSettingsFieldForClassName_HealthPerSegment( playerSettings )
+	RuiSetInt( file.cockpitRui, "numHealthSegments", int( health / healthPerSegment ) )
+	RuiTrackFloat( file.cockpitRui, "cockpitColor", player, RUI_TRACK_STATUS_EFFECT_SEVERITY, eStatusEffect.cockpitColor )
+
+	int numDashPips = int( floor( 100 / GetSettingsForPlayer_DodgeTable( GetLocalViewPlayer() )["dodgePowerDrain"] ) )
+	RuiSetInt( file.cockpitRui, "numDashSegments", numDashPips )
+	// RuiSetInt( file.cockpitLowerRui, "numDashSegments", numDashPips )
+
+	RuiSetDrawGroup( file.cockpitRui, RUI_DRAW_COCKPIT )
+	// #if MP
+	// if ( GetCurrentPlaylistVarInt( "aegis_upgrades", 0 ) == 1 && !IsSpectating() && !IsWatchingKillReplay() )
+	// 	thread DisplayFrontierRank( file.isFirstBoot )
+	// #endif
+	// file.isFirstBoot = false
+
+	// UpdateTitanCockpitVisibility()
+}
+
+void function Hud_SetColorWithTable(var element, table color)
+{
+	if (!("a" in color)) {
+		color.a <- 255
+	}
+	Hud_SetColor(element, color.r, color.g, color.b, color.a )
+}
+
+void function Hud_SetPosWithVector(var element, vector pos)
+{
+	Hud_SetPos( element, pos.x, pos.y )
+
+}
+
+void function LoadModSettings()
+{
+	if (file.entityStatus == null) {
+		return
+	}
+
+
+	/////////// MAIN PANEL
+	// Position
+	vector panelPosition = StringToVector( GetConVarString("EntityStatus.panel_position") )
+	Hud_SetPosWithVector(HudElement("EntityStatusTitle", file.entityStatus), panelPosition)
+	
+	// Title
+	Hud_SetText(HudElement("EntityStatusTitle", file.entityStatus), GetConVarString("EntityStatus.title_content"))
+	Hud_SetAlpha(HudElement("EntityStatusTitle", file.entityStatus), file.panelAlpha * 255)
+
+	// Alpha
+	file.panelAlpha = GetConVarFloat("EntityStatus.panel_alpha")
+	Hud_SetPanelAlpha(file.entityStatus, file.panelAlpha * 255)
+	Hud_SetAlpha(file.entityStatus, file.panelAlpha * 255)
+
+
+
+	////////// BAR-GAP
+	int barTall = GetConVarInt("EntityStatus.bar_tall")
+	int barGap = GetConVarInt("EntityStatus.bar_gap")
+	int barWidth = GetConVarInt("EntityStatus.bar_wide")
+	for (int i = 1; i < maxSlot; i++) {
+		var bar = HudElement("EntityStatusBar" + i, file.entityStatus)
+		Hud_SetY(bar, barGap)
+	}
+
+	////////// PANEL BACKGROUND
+	var entityStatusBg = HudElement("EntityStatusBg", file.entityStatus)
+	entityStatusBg.Hide()
+
+	int panelPaddingTop = GetConVarInt("EntityStatus.panel_padding_top")
+	int panelPaddingRight = GetConVarInt("EntityStatus.panel_padding_right")
+	int panelPaddingBottom = GetConVarInt("EntityStatus.panel_padding_bottom")
+	int panelPaddingLeft = GetConVarInt("EntityStatus.panel_padding_left")
+
+	int panelBgTall = barTall * file.targets.len() + panelPaddingTop + panelPaddingBottom + (file.targets.len() - 1) * abs(barGap)
+	int panelBgWidth = barWidth + panelPaddingRight + panelPaddingLeft
+
+	Hud_SetSize(entityStatusBg, panelBgWidth, panelBgTall)
+
+
+	table panelColor = GetColorsFromConVar("EntityStatus.panel_bgcolor") 
+	Hud_SetColorWithTable( entityStatusBg, panelColor )
+
+
+	Hud_SetPos(entityStatusBg, 50 - panelPaddingRight, 400 - panelPaddingTop)
+	// printt("entityStatusBg", "Hud_SetSize", Hud_GetSize(entityStatusBg)[0], Hud_GetSize(entityStatusBg)[1])
+
+	// Rotation
+	float panelRotation = GetConVarFloat("EntityStatus.panel_rotation")
+	Hud_SetRotation( entityStatusBg, panelRotation)
+	///////// BAR
+	file.avatarAlpha = GetConVarFloat("EntityStatus.avatar_alpha")
+	file.healthbarLabelAlpha = GetConVarFloat("EntityStatus.health_bar_label_alpha")
+	file.moneyLabelAlpha = GetConVarFloat("EntityStatus.money_label_alpha")
+
+	file.healthbarCommonFgColor = GetColorsFromConVar("EntityStatus.health_common_fgcolor") 
+	file.healthbarLocalFgColor = GetColorsFromConVar("EntityStatus.health_local_fgcolor") 
+	file.healthbarPartyFgColor = GetColorsFromConVar("EntityStatus.health_party_fgcolor") 
+	file.healthbarDoomFgColor = GetColorsFromConVar("EntityStatus.health_doom_fgcolor") 
+	file.healthbarShieldFgColor = GetColorsFromConVar("EntityStatus.health_shield_fgcolor") 
+	file.healthbarAutotitanFgColor = GetColorsFromConVar("EntityStatus.health_autotitan_fgcolor") 
+
+	file.coreLabelAlpha = GetConVarFloat("EntityStatus.core_label_alpha")
+	file.coreLabelCoreBuildingFgColor = GetColorsFromConVar("EntityStatus.core_label_core_building_fgcolor") 
+	file.coreLabelCoreReadyFgColor = GetColorsFromConVar("EntityStatus.core_label_core_ready_fgcolor") 
+	file.coreLabelTitanBuildingFgColor = GetColorsFromConVar("EntityStatus.core_label_titan_building_fgcolor") 
+
+	file.coreProgressAlpha = GetConVarFloat("EntityStatus.core_progress_alpha")
+	file.coreProgressFgColor = GetColorsFromConVar("EntityStatus.core_progress_fgcolor") 
+
+	file.coreBgAlpha  = GetConVarFloat("EntityStatus.core_bg_alpha")
+	file.coreBgColor = GetColorsFromConVar("EntityStatus.core_bgcolor") 
+
+
+
+
+
+
+}
+
+void function SetBarFillColor(var barFill, entity player) {
+	table color = file.healthbarCommonFgColor
+
+	if (player.IsTitan() && GetDoomedState( player )) {
+		color = file.healthbarDoomFgColor
+	}
+
+	Hud_SetColorWithTable( barFill, color )
+
+}
+
+table function GetColorsFromConVar(string conVar) {
+	table color = StringToColors(GetConVarString(conVar))
+
+	if (
+		!("r" in color) ||
+		!("g" in color) ||
+		!("b" in color)
+	)
+	{
+		SetConVarToDefault( conVar )
+	}
+
+	return StringToColors(GetConVarString(conVar))
+}
