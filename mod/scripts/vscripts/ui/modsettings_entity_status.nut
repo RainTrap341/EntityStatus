@@ -2,38 +2,26 @@ global function EntityStatus_ModSettings_Init
 
 
 
-
-
 void function EntityStatus_ModSettings_Init()
 {
 
 
-	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && PLAYER_HAS_MOD_SETTINGS_PLUS
-		printt("EntityStatus: ModSettingPlus Found. Init...")
-		InitModSettingsPlus()
-
-	#endif
-	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && !(PLAYER_HAS_MOD_SETTINGS_PLUS)
-		printt("EntityStatus: ModSetting Found. Init partly...")
-
+	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT)
+		printt("EntityStatus: ModSetting Found. Init...")
 		InitModSettings()
 	#endif
 }
+
 #if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT)
-void function InitModSettingsPlus() {
-		AddModTitle("Entity Status" + Localize("#ENTITY_STATUS"))
+void function InitModSettings() {
+		AddModTitle("Entity Status: " + Localize("#ENTITY_STATUS"))
 
 		AddModCategory("#MAIN_PANEL")
 
-		// ModSettings_AddSetting("EntityStatus.panel_alpha","Panel Alpha", "float")
-		ModSettings_AddAlphaSetting("EntityStatus.panel_alpha", Localize("#MAIN_PANEL")
-		+ Localize("#SETTING_ALPHA"))
-		ModSettings_AddSetting("EntityStatus.panel_position","#SETTING_POSITION", "vector")
-
-
-		ModSettings_AddSetting("EntityStatus.title_content", Localize("#TITLE")+ "(可能無法正常顯示中文符號)")
-		ModSettings_AddAlphaSetting("EntityStatus.title_alpha", Localize("#TITLE")
-		+ Localize("#SETTING_ALPHA") )
+		AddAlphaModSetting("EntityStatus.panel_alpha", "#MAIN_PANEL_ALPHA")
+		ModSettings_AddSetting("EntityStatus.panel_position","#MAIN_PANEL_POSITION", "vector")
+		ModSettings_AddSetting("EntityStatus.title_content", "#TITLE")
+		AddAlphaModSetting("EntityStatus.title_alpha", "#TITLE_ALPHA" )
 
 		// ModSettings_AddSetting("EntityStatus.panel_bgcolor","#SETTING_COLOR", "vector")
 		// ModSettings_AddSliderSetting("EntityStatus.panel_rotation","#SETTING_ROTATION", 0, 90.0, 0.05)
@@ -44,183 +32,52 @@ void function InitModSettingsPlus() {
 		// ModSettings_AddSetting("EntityStatus.panel_padding_bottom","Panel Padding Bottom", "int")
 		// ModSettings_AddSetting("EntityStatus.panel_padding_left","Panel Padding Left", "int")
 
-		AddModCategory(Localize("#PM_PILOT_HEALTH") + Localize("#SETTING_BAR"))
+		AddModCategory("#HEALTH_BAR")
+		AddAlphaModSetting("EntityStatus.avatar_alpha", "#AVATAR_ALPHA" )
+		AddAlphaModSetting("EntityStatus.health_bar_label_alpha", "#HEALTH_BAR_TEXT_ALPHA")
+		AddAlphaModSetting("EntityStatus.money_label_alpha", "#HEALTH_BAR_MONEY_ALPHA")
+		ModSettings_AddSetting("EntityStatus.bar_tall", "#HEALTH_BAR_HEIGHT", "int")
+		ModSettings_AddSetting("EntityStatus.bar_wide", "#HEALTH_BAR_WIDTH", "int")
+		ModSettings_AddSetting("EntityStatus.bar_gap", "#HEALTH_BAR_GAP", "int")
 
 
-		ModSettings_AddAlphaSetting("EntityStatus.avatar_alpha",
-		Localize("#SETTING_AVATAR")
-		+ Localize("#SETTING_ALPHA") )
 
-		ModSettings_AddAlphaSetting("EntityStatus.health_bar_label_alpha",
-		Localize("#SETTING_HEALTH_LABEL")
-		+ Localize("#SETTING_ALPHA") )
-
-		ModSettings_AddAlphaSetting("EntityStatus.money_label_alpha",
-		Localize("#SETTING_MONEY_LABEL")
-		+ Localize("#SETTING_ALPHA") )
-
-		ModSettings_AddSetting("EntityStatus.bar_tall",
-		Localize("#SETTING_BAR")
-		+ Localize("#SETTING_HEIGHT"),
-		 "int")
-		ModSettings_AddSetting("EntityStatus.bar_wide",
-		Localize("#SETTING_BAR")
-		+ Localize("#SETTING_WIDTH"),
-		 "int")
-		ModSettings_AddSetting("EntityStatus.bar_gap",
-		Localize("#SETTING_BAR")
-		+ Localize("#SETTING_GAP"),
-		 "int")
-
-		AddModCategory(Localize("#PM_PILOT_HEALTH")+ Localize("#SETTING_COLOR"))
-
+		AddModCategory("#HEALTH_BAR_COLORS")
 		// ModSettings_AddColorPicker( "EntityStatus.health_common_fgcolor", "#HUD_DEFAULT_COLORS_OPTION" )
-		ModSettings_AddColorSetting("EntityStatus.health_common_fgcolor","#HUD_DEFAULT_COLORS_OPTION")
-		ModSettings_AddColorSetting("EntityStatus.health_local_fgcolor","#HUD_LOCAL_COLORS_OPTION")
-		ModSettings_AddColorSetting("EntityStatus.health_party_fgcolor","#HUD_PARTY_COLORS_OPTION")
-		ModSettings_AddColorSetting("EntityStatus.health_doom_fgcolor",
-		Localize("#SCORE_EVENT_DOOMED_TITAN")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+ Localize("#SETTING_COLOR"))
-		ModSettings_AddColorSetting("EntityStatus.health_shield_fgcolor",
-		Localize("#TITANCORE_SHIELD_SHORT")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+Localize("#SETTING_COLOR"))
+		AddColorModSetting("EntityStatus.health_common_fgcolor","#HEALTH_BAR_BG_COLOR")
+		AddColorModSetting("EntityStatus.health_local_fgcolor","#HEALTH_BAR_TEXT_LOCAL_COLOR")
+		AddColorModSetting("EntityStatus.health_party_fgcolor","#HEALTH_BAR_TEXT_PARTY_COLOR")
+		AddColorModSetting("EntityStatus.health_doom_fgcolor", "#HEALTH_BAR_BG_DOOM_COLOR")
+		AddColorModSetting("EntityStatus.health_shield_fgcolor", "#HEALTH_BAR_BG_SHIELD_COLOR")
 
 
 		AddModCategory(Localize("#TITAN_CORE_CONTROLS"))
-		ModSettings_AddAlphaSetting("EntityStatus.core_label_alpha","#SETTING_ALPHA" )
-		ModSettings_AddColorSetting("EntityStatus.core_label_core_building_fgcolor",
-		Localize("#HUD_TITAN_CORE_CHARGING")
-		 + Localize("#KNB_MENU_HEADER_PROGRESSION")
-		 + Localize("#SETTING_COLOR") )
-		 ModSettings_AddColorSetting("EntityStatus.core_label_core_ready_fgcolor",
-		Localize("#CORE_READY")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+ Localize("#SETTING_COLOR") )
-		ModSettings_AddColorSetting("EntityStatus.core_label_titan_building_fgcolor",
-		Localize("#KNB_MENU_HEADER_TITANS")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+ Localize("#SETTING_COLOR") )
-
-		ModSettings_AddAlphaSetting("EntityStatus.core_progress_alpha",
-		Localize("#KNB_MENU_HEADER_TITANS")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+ Localize("#SETTING_TEXT")
-		+ Localize("#SETTING_ALPHA") )
-		ModSettings_AddColorSetting("EntityStatus.core_progress_fgcolor",
-		Localize("#KNB_MENU_HEADER_TITANS")
-		+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-		+ Localize("#SETTING_TEXT")
-		+ Localize("#SETTING_COLOR") )
+		AddAlphaModSetting("EntityStatus.core_label_alpha","#CORE_PROGRESS_TEXT_ALPHA" )
+		AddColorModSetting("EntityStatus.core_label_core_building_fgcolor", "#CORE_PROGRESS_TEXT_CORE_BUILDING_COLOR")
+		AddColorModSetting("EntityStatus.core_label_core_ready_fgcolor",  "#CORE_PROGRESS_TEXT_CORE_READY_COLOR")
+		AddColorModSetting("EntityStatus.core_label_titan_building_fgcolor", "#CORE_PROGRESS_TEXT_TITAN_BUILDING_COLOR")
+		AddAlphaModSetting("EntityStatus.core_progress_alpha", "#CORE_PROGRESS_BAR_ALPHA")
+		AddColorModSetting("EntityStatus.core_progress_fgcolor", "#CORE_PROGRESS_BAR_COLOR")
+		AddAlphaModSetting("EntityStatus.core_bg_alpha", "#CORE_PROGRESS_BAR_BG_ALPHA")
+		AddAlphaModSetting("EntityStatus.core_bgcolor", "#CORE_PROGRESS_BAR_BG_COLOR")
 }
 
-void function InitModSettings()
-{
-	AddModTitle("Entity Status" + Localize("#ENTITY_STATUS"))
 
-	AddModCategory("#MAIN_PANEL")
+void function AddColorModSetting(string conVar, string displayName) {
+	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && PLAYER_HAS_MOD_SETTINGS_PLUS
+	ModSettings_AddColorSetting(conVar, displayName, null, 3)
+	#endif
+	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && !(PLAYER_HAS_MOD_SETTINGS_PLUS)
+	ModSettings_AddSetting(conVar, displayName, "", 3)
+	#endif
+}
 
-	ModSettings_AddSetting("EntityStatus.panel_alpha", Localize("#MAIN_PANEL")
-	+ Localize("#SETTING_ALPHA"))
-	ModSettings_AddSetting("EntityStatus.panel_position","#SETTING_POSITION", "vector")
-
-
-	ModSettings_AddSetting("EntityStatus.title_content", Localize("#TITLE")+ "(可能無法正常顯示中文符號)")
-	ModSettings_AddSetting("EntityStatus.title_alpha", Localize("#TITLE")
-	+ Localize("#SETTING_ALPHA") )
-
-	// ModSettings_AddSetting("EntityStatus.panel_bgcolor","#SETTING_COLOR", "vector")
-	// ModSettings_AddSliderSetting("EntityStatus.panel_rotation","#SETTING_ROTATION", 0, 90.0, 0.05)
-
-	// AddModCategory("Panel Padding")
-	// ModSettings_AddSetting("EntityStatus.panel_padding_top","Panel Padding Top", "int")
-	// ModSettings_AddSetting("EntityStatus.panel_padding_right","Panel Padding Right", "int")
-	// ModSettings_AddSetting("EntityStatus.panel_padding_bottom","Panel Padding Bottom", "int")
-	// ModSettings_AddSetting("EntityStatus.panel_padding_left","Panel Padding Left", "int")
-
-	AddModCategory(Localize("#PM_PILOT_HEALTH") + Localize("#SETTING_BAR"))
-
-
-	ModSettings_AddSetting("EntityStatus.avatar_alpha",
-	Localize("#SETTING_AVATAR")
-	+ Localize("#SETTING_ALPHA") )
-
-	ModSettings_AddSetting("EntityStatus.health_bar_label_alpha",
-	Localize("#SETTING_HEALTH_LABEL")
-	+ Localize("#SETTING_ALPHA") )
-
-	ModSettings_AddSetting("EntityStatus.money_label_alpha",
-	Localize("#SETTING_MONEY_LABEL")
-	+ Localize("#SETTING_ALPHA") )
-
-	ModSettings_AddSetting("EntityStatus.bar_tall",
-	Localize("#SETTING_BAR")
-	+ Localize("#SETTING_HEIGHT"),
-	 "int")
-	ModSettings_AddSetting("EntityStatus.bar_wide",
-	Localize("#SETTING_BAR")
-	+ Localize("#SETTING_WIDTH"),
-	 "int")
-	ModSettings_AddSetting("EntityStatus.bar_gap",
-	Localize("#SETTING_BAR")
-	+ Localize("#SETTING_GAP"),
-	 "int")
-
-	AddModCategory(Localize("#PM_PILOT_HEALTH")+ Localize("#SETTING_COLOR"))
-
-	// ModSettings_AddColorPicker( "EntityStatus.health_common_fgcolor", "#HUD_DEFAULT_COLORS_OPTION" )
-	ModSettings_AddSetting("EntityStatus.health_common_fgcolor","#HUD_DEFAULT_COLORS_OPTION")
-	ModSettings_AddSetting("EntityStatus.health_local_fgcolor","#HUD_LOCAL_COLORS_OPTION")
-	ModSettings_AddSetting("EntityStatus.health_party_fgcolor","#HUD_PARTY_COLORS_OPTION")
-	ModSettings_AddSetting("EntityStatus.health_doom_fgcolor",
-	Localize("#SCORE_EVENT_DOOMED_TITAN")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+ Localize("#SETTING_COLOR"))
-	ModSettings_AddSetting("EntityStatus.health_shield_fgcolor",
-	Localize("#TITANCORE_SHIELD_SHORT")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+Localize("#SETTING_COLOR"))
-
-
-	// ModSettings_AddSetting("EntityStatus.health_common_fgcolor","#HUD_DEFAULT_COLORS_OPTION", "vector")
-	// ModSettings_AddSetting("EntityStatus.health_local_fgcolor","#HUD_LOCAL_COLORS_OPTION", "vector")
-	// ModSettings_AddSetting("EntityStatus.health_party_fgcolor","#HUD_PARTY_COLORS_OPTION", "vector")
-	// ModSettings_AddSetting("EntityStatus.health_doom_fgcolor",
-	// Localize("#SCORE_EVENT_DOOMED_TITAN")
-	// + Localize("#KNB_MENU_HEADER_PROGRESSION")
-	// + Localize("#SETTING_COLOR")
-	// , "vector")
-	// ModSettings_AddSetting("EntityStatus.health_shield_fgcolor",
-	// Localize("#TITANCORE_SHIELD_SHORT")
-	// + Localize("#KNB_MENU_HEADER_PROGRESSION")
-	// +Localize("#SETTING_COLOR")
-	// , "vector")
-
-	AddModCategory(Localize("#TITAN_CORE_CONTROLS"))
-	ModSettings_AddSetting("EntityStatus.core_label_alpha","#SETTING_ALPHA" )
-	ModSettings_AddSetting("EntityStatus.core_label_core_building_fgcolor",
-	Localize("#HUD_TITAN_CORE_CHARGING")
-	 + Localize("#KNB_MENU_HEADER_PROGRESSION")
-	 + Localize("#SETTING_COLOR") )
-	 ModSettings_AddSetting("EntityStatus.core_label_core_ready_fgcolor",
-	Localize("#CORE_READY")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+ Localize("#SETTING_COLOR") )
-	ModSettings_AddSetting("EntityStatus.core_label_titan_building_fgcolor",
-	Localize("#KNB_MENU_HEADER_TITANS")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+ Localize("#SETTING_COLOR") )
-
-	ModSettings_AddSetting("EntityStatus.core_progress_alpha",
-	Localize("#KNB_MENU_HEADER_TITANS")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+ Localize("#SETTING_TEXT")
-	+ Localize("#SETTING_ALPHA") )
-	ModSettings_AddSetting("EntityStatus.core_progress_fgcolor",
-	Localize("#KNB_MENU_HEADER_TITANS")
-	+ Localize("#KNB_MENU_HEADER_PROGRESSION")
-	+ Localize("#SETTING_TEXT")
-	+ Localize("#SETTING_COLOR") )
+void function AddAlphaModSetting(string conVar, string displayName) {
+	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && PLAYER_HAS_MOD_SETTINGS_PLUS
+	ModSettings_AddAlphaSetting(conVar, displayName, 3)
+	#endif
+	#if (PLAYER_HAS_MOD_SETTINGS || PLAYER_HAS_NS_CLIENT) && !(PLAYER_HAS_MOD_SETTINGS_PLUS)
+	ModSettings_AddSetting(conVar, displayName,"", 3)
+	#endif
 }
 #endif

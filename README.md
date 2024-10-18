@@ -126,3 +126,8 @@ If these sreenshots get broken, check them on ![Github](https://github.com/RainT
 - Feature. Mod-Settings.
 
 - Rework. Titan-shield bar
+
+## 1.5.1
+
+- Rework. Translation Improved.
+- Rework. Modsetting init code refined.
