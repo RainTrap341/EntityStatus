@@ -69,7 +69,7 @@ It supports `Color Picker` if you installed my mod [ModSettingPlus | Thunderstor
   
 
 # Screenshots
-If these sreenshots get broken, check them on ![Github](https://github.com/RainTrap341/EntityStatus/tree/main/screenshots).
+If these sreenshots get broken, check them on [Github](https://github.com/RainTrap341/EntityStatus/tree/main/screenshots).
 
 ![1.jpg](https://www.helloimg.com/i/2024/10/06/6702a9ceef435.jpg)
 ![2.jpg](https://www.helloimg.com/i/2024/10/06/6702a9cec10dc.jpg)
@@ -131,3 +131,8 @@ If these sreenshots get broken, check them on ![Github](https://github.com/RainT
 
 - Rework. Translation Improved.
 - Rework. Modsetting init code refined.
+
+## 1.5.2
+
+- Rework. Translation Improved.
+- Bugfix. Make color setting like alpha by mistake. 

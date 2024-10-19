@@ -59,7 +59,7 @@ void function InitModSettings() {
 		AddAlphaModSetting("EntityStatus.core_progress_alpha", "#CORE_PROGRESS_BAR_ALPHA")
 		AddColorModSetting("EntityStatus.core_progress_fgcolor", "#CORE_PROGRESS_BAR_COLOR")
 		AddAlphaModSetting("EntityStatus.core_bg_alpha", "#CORE_PROGRESS_BAR_BG_ALPHA")
-		AddAlphaModSetting("EntityStatus.core_bgcolor", "#CORE_PROGRESS_BAR_BG_COLOR")
+		AddColorModSetting("EntityStatus.core_bgcolor", "#CORE_PROGRESS_BAR_BG_COLOR")
 }
 
 
