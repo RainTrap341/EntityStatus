@@ -1,5 +1,21 @@
 "Resource/UI/HudEntityStatus.res"
 {
+	EntityStatusBg
+	{
+		ControlName			ImagePanel
+		wide				350
+		tall				900
+		scaleImage			1
+		visible				1
+
+		xpos 					50
+		ypos					400
+		zpos					1000
+		image 						"vgui/hud/white"
+		drawColor	"0 0 0 128"
+	}
+
+
 	EntityStatusTitle
 	{
 		ControlName				Label
@@ -18,31 +34,15 @@
 		visible						1
 	}
 
-	EntityStatusBg
-	{
-		ControlName			ImagePanel
-		wide				350
-		tall				900
-		visible				0
-
-		xpos 					50
-		ypos					400
-		zpos					1012
-		image 						"vgui/hud/white"
-		drawColor	"0 0 0 128"
-	}
 
 	EntityStatusBar0
 	{
 		ControlName			CNestedPanel
 		wide				300
 		tall				90
+		zpos				1012
 		visible				0
 
-		// xpos 					-100
-		// xpos 					50
-		// ypos					400
-		// zpos					1012
 
 		pin_to_sibling				EntityStatusTitle
 		pin_corner_to_sibling		TOP

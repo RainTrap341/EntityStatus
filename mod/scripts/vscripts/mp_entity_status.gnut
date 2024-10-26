@@ -12,7 +12,7 @@ global function InitMpEntityStatus
 
 // DESIGNED MAX FOR 8 PLAYERS MATCH. ITS POSSIBLE TO EXTEED TO 8+ IF YOU WANT.
 const int maxSlot = 8
-const bool isDev = true
+const bool isDev = false
 
 table < string, int > titanKit2Table = {
 	[ "pas_ronin_weapon" ]					= ePassives.PAS_RONIN_WEAPON,
@@ -121,6 +121,13 @@ struct
 	table healthbarDoomFgColor
 	table healthbarShieldFgColor
 	table healthbarAutotitanFgColor
+	table healthbarHazardFgColor
+	table defaultHealthbarHazardFgColor = {
+	    r = 249,
+		g = 219,
+		b = 49,
+		a = 255
+	}
 
 	float coreLabelAlpha
 	table coreLabelCoreBuildingFgColor
@@ -145,6 +152,13 @@ void function InitMpEntityStatus() {
 	AddCallback_GameStateEnter( eGameState.Epilogue, HideEntityStatus )
 	AddScoreboardShowCallback( OnSbShow )
     AddScoreboardHideCallback( OnSbHide )
+
+
+	// PrecacheHUDMaterial( $"vgui/hud/coop/wave_callout_strip" )
+	// PrecacheHUDMaterial( $"vgui/hud/coop/wave_callout_strip_lines" )
+	// PrecacheHUDMaterial( $"vgui/hud/coop/wave_callout_hazard" )
+	// PrecacheHUDMaterial( $"vgui/HUD/white" )
+	// PrecacheHUDMaterial( $"vgui/HUD/white" )
 
 	thread Monitor()
 }
@@ -185,10 +199,17 @@ void function TestFunc()
 	Assert(p == b)
 	// Assert(p == c)
 	// Assert(p == d)
+
+	printt("IsUseHazardBar()", IsUseHazardBar())
 }
 
 bool function ShowDrawHud() {
-	if (GameRules_GetGameMode() != FD || file.shouldHide || IsLobby() || file.shouldHide || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating || GetGameState() < eGameState.Playing)
+	if (isDev) {
+		return true
+	}
+
+	int ceFlags = GetLocalClientPlayer().GetCinematicEventFlags()
+	if (GameRules_GetGameMode() != FD || file.shouldHide || IsLobby() || ( ceFlags & CE_FLAG_HIDE_MAIN_HUD ) > 0 || clGlobal.isMenuOpen || clGlobal.isSoloDialogMenuOpen || clGlobal.isSpectating || GetGameState() < eGameState.Playing)
 	{
 		return false
 		// return true
@@ -200,7 +221,10 @@ bool function ShowDrawHud() {
 
 void function Monitor() {
 	WaitFrame()
-	// TestFunc()
+	if (isDev) {
+		TestFunc()
+		
+	}
 	
 	// AddScoreEventCallback( GetScoreEvent( "FDTeamWave" ).eventId, ClearScoreInWave )
 
@@ -226,18 +250,19 @@ void function Monitor() {
 
 		file.entityStatus.Show()
 		int i = 0
-		file.targets = GetTargets()
-
-		foreach (entity ent in file.targets) {
-			string name = ent.GetPlayerName()
+		file.targets = []
 
 
-			var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
-			panel.Show()
+		foreach (entity ent in GetTargets()) {
+			// printt(ent.GetPlayerName())
+			// var panel = HudElement("EntityStatusBar" + i, file.entityStatus)
+			// panel.Show()
 			SetBarValues(i, ent)
 
+			file.targets.append(ent)
+
 			i++
-			if (i >= 8) {
+			if (i >= maxSlot) {
 				break
 			}
 		}
@@ -290,7 +315,7 @@ void function SetBarValues(int panelIndex, entity ent)
 	
 	// Get nested panel
 	var entityBar = HudElement("EntityStatusBar" + panelIndex, file.entityStatus)
-	entityBar.Hide()
+	// entityBar.Hide()
 
 
 	Assert( ent.IsPlayer() )
@@ -345,6 +370,7 @@ void function SetBarValues(int panelIndex, entity ent)
 	// Avatar
 	var avatar = Hud_GetChild( entityBar, "EntityImage" )
 	RuiSetImage( Hud_GetRui(avatar), "basicImage", image)
+	// RuiSetImage( Hud_GetRui(avatar), "basicImage", $"vgui/hazard_line")
 	RuiSetFloat( Hud_GetRui(avatar), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
 
 	// if (IsValid(ent.GetCockpit())) {
@@ -356,8 +382,8 @@ void function SetBarValues(int panelIndex, entity ent)
 
 	// Thats bad. Core with bg is not that awesome.
 	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "Core" )), "basicImage", $"rui/titan_loadout/core/titan_core_laser" )
-	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", $"vgui/white" )
-	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBgStatic" )), "basicImage", $"vgui/white" )
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImage", $"vgui/hud/white" )
+	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "CoreBgStatic" )), "basicImage", $"vgui/hud/white" )
 	// RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "CoreBg" )), "basicImageColor", <0,0,0> )
 
 
@@ -365,8 +391,10 @@ void function SetBarValues(int panelIndex, entity ent)
 	// avatar bg
 	RuiSetImage( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImage", $"vgui/hud/white")
 	RuiSetFloat3( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageColor", <0,0,0> )
-	RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", 0.3 )
-	// RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
+	if (GetConVarBool("EntityStatus.panel_hollow_bg"))
+		RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", 0.3 * file.avatarAlpha * file.panelAlpha)
+	else
+		RuiSetFloat( Hud_GetRui(Hud_GetChild( entityBar, "EntityImageShade" )), "basicImageAlpha", 0)
 
 
 	
@@ -405,11 +433,30 @@ void function SetBarValues(int panelIndex, entity ent)
 	// printt("start", startValue, "end", endValue, "current", currentValue, "frac", frac)
 
 	var barFill = Hud_GetChild( entityBar, "BarFill" )
+	Hud_SetColorWithTable( barFill, file.healthbarCommonFgColor )
 	Hud_SetScaleX( barFill, frac )
 	// Hud_SetScaleX( barFill, 0.5 )
 	// Hud_SetScaleX( Hud_GetChild( entityBar, "BarFillShield" ), 0.7 )
  
-	SetBarFillColor(barFill, ent)
+	var hazardLine = Hud_GetChild(entityBar, "BarFillHazard")
+
+	hazardLine.Hide()
+	if (ent.IsTitan() && GetDoomedState( ent ) && IsUseHazardBar()) {
+		hazardLine.Show()
+		Hud_SetScaleX( hazardLine, frac )
+		
+		if (IsUseHarzardBarDrawcolor())
+			Hud_SetColorWithTable( Hud_GetChild(hazardLine, "Image"), file.healthbarHazardFgColor )
+		else
+			Hud_SetColorWithTable( Hud_GetChild(hazardLine, "Image"), file.defaultHealthbarHazardFgColor )
+
+		
+	}
+
+	// if (isDev) {
+	// 	hazardLine.Show()
+	// 	Hud_SetScaleX( hazardLine, 0.5 )
+	// }
 
 
 
@@ -594,7 +641,7 @@ void function SetBarValues(int panelIndex, entity ent)
 
 			Hud_SetColorWithTable(Hud_GetChild( entityBar, "CoreLabel" ), file.coreLabelTitanBuildingFgColor)
 	
-
+			PrintFunc(exception)
 		}
 		
 	}
@@ -630,6 +677,7 @@ void function SetBarValues(int panelIndex, entity ent)
 		Hud_GetChild( entityBar, "BarFillAutotitan" ).Show()
 
 	}
+	/////////////////////////////// Shield
 	else if (ent.IsTitan()) {
 		// player on titan. Shield. ent.GetShieldHealth() is not for player
 		// not available.
@@ -791,7 +839,7 @@ void function SetBarValues(int panelIndex, entity ent)
 						Hud_SetColor( smokeCountHud, PARTY_R, PARTY_G, PARTY_B, 255 )
 					} catch (exception){
 						smokeCountHud.Hide()
-
+						PrintFunc(exception)
 						// printt(ent.GetPlayerName(), "IS NOT LOCAL PLAYER. Can't Call GetWeaponPrimaryClipCountMax() on Smoke")
 					}
 
@@ -838,9 +886,6 @@ void function SetBarValues(int panelIndex, entity ent)
 	RuiSetFloat(Hud_GetRui(Hud_GetChild(entityBar, "EntityImageAutotitan")), "basicImageAlpha", file.avatarAlpha * file.panelAlpha)
 	
 	entityBar.Show()
-
-
-
 		// Cheater check
 	if (!IsLobby() && GameRules_GetGameMode() != FD) {
 		GetLocalClientPlayer().cv.hudCheaterMessage.Show()
@@ -1106,6 +1151,7 @@ function BlingBling(var aHudElement, vector color1, vector color2, float between
 				Hud_SetColor( aHudElement, color1.x, color1.y, color1.z, alpha1 )
 			} catch (exception){
 				printt("BlingBling", exception)
+				PrintFunc(exception)
 			} 
 		}
 		else
@@ -1115,7 +1161,7 @@ function BlingBling(var aHudElement, vector color1, vector color2, float between
 				Hud_SetColor( aHudElement, color2.x, color2.y, color2.z, alpha2 )
 			} catch (exception2){
 				printt("BlingBling", exception2)
-				
+				PrintFunc(exception2)
 			}
 		}
 
@@ -1668,14 +1714,16 @@ void function LoadModSettings()
 	vector panelPosition = StringToVector( GetConVarString("EntityStatus.panel_position") )
 	Hud_SetPosWithVector(HudElement("EntityStatusTitle", file.entityStatus), panelPosition)
 	
-	// Title
-	Hud_SetText(HudElement("EntityStatusTitle", file.entityStatus), GetConVarString("EntityStatus.title_content"))
-	Hud_SetAlpha(HudElement("EntityStatusTitle", file.entityStatus), file.panelAlpha * 255)
-
 	// Alpha
 	file.panelAlpha = GetConVarFloat("EntityStatus.panel_alpha")
 	Hud_SetPanelAlpha(file.entityStatus, file.panelAlpha * 255)
 	Hud_SetAlpha(file.entityStatus, file.panelAlpha * 255)
+	
+	// Title
+	Hud_SetText(HudElement("EntityStatusTitle", file.entityStatus), GetConVarString("EntityStatus.title_content"))
+	Hud_SetAlpha(HudElement("EntityStatusTitle", file.entityStatus), file.panelAlpha * 255)
+
+
 
 
 
@@ -1690,24 +1738,29 @@ void function LoadModSettings()
 
 	////////// PANEL BACKGROUND
 	var entityStatusBg = HudElement("EntityStatusBg", file.entityStatus)
-	entityStatusBg.Hide()
+	// entityStatusBg.Hide()
+
+	// Might be weire if got mates more than 4. Due to that it streches the image as whole one.
+	if (GetConVarBool("EntityStatus.panel_hollow_bg"))
+		Hud_SetImage(entityStatusBg,  $"vgui/_border")
+	else
+		Hud_SetImage(entityStatusBg,  $"vgui/hud/white")
+	
 
 	int panelPaddingTop = GetConVarInt("EntityStatus.panel_padding_top")
 	int panelPaddingRight = GetConVarInt("EntityStatus.panel_padding_right")
 	int panelPaddingBottom = GetConVarInt("EntityStatus.panel_padding_bottom")
 	int panelPaddingLeft = GetConVarInt("EntityStatus.panel_padding_left")
 
-	int panelBgTall = barTall * file.targets.len() + panelPaddingTop + panelPaddingBottom + (file.targets.len() - 1) * abs(barGap)
+	int panelBgTall = barTall * file.targets.len() + panelPaddingTop + panelPaddingBottom + (file.targets.len() - 1) * barGap + Hud_GetHeight(HudElement("EntityStatusTitle", file.entityStatus))
 	int panelBgWidth = barWidth + panelPaddingRight + panelPaddingLeft
-
 	Hud_SetSize(entityStatusBg, panelBgWidth, panelBgTall)
 
 
 	table panelColor = GetColorsFromConVar("EntityStatus.panel_bgcolor") 
 	Hud_SetColorWithTable( entityStatusBg, panelColor )
+	Hud_SetPosWithVector(entityStatusBg, panelPosition - < panelPaddingLeft, panelPaddingTop, 0> )
 
-
-	Hud_SetPos(entityStatusBg, 50 - panelPaddingRight, 400 - panelPaddingTop)
 	// printt("entityStatusBg", "Hud_SetSize", Hud_GetSize(entityStatusBg)[0], Hud_GetSize(entityStatusBg)[1])
 
 	// Rotation
@@ -1724,7 +1777,8 @@ void function LoadModSettings()
 	file.healthbarDoomFgColor = GetColorsFromConVar("EntityStatus.health_doom_fgcolor") 
 	file.healthbarShieldFgColor = GetColorsFromConVar("EntityStatus.health_shield_fgcolor") 
 	file.healthbarAutotitanFgColor = GetColorsFromConVar("EntityStatus.health_autotitan_fgcolor") 
-
+	file.healthbarHazardFgColor = GetColorsFromConVar("EntityStatus.hazard_line_drawcolor") 
+	
 	file.coreLabelAlpha = GetConVarFloat("EntityStatus.core_label_alpha")
 	file.coreLabelCoreBuildingFgColor = GetColorsFromConVar("EntityStatus.core_label_core_building_fgcolor") 
 	file.coreLabelCoreReadyFgColor = GetColorsFromConVar("EntityStatus.core_label_core_ready_fgcolor") 
@@ -1743,17 +1797,6 @@ void function LoadModSettings()
 
 }
 
-void function SetBarFillColor(var barFill, entity player) {
-	table color = file.healthbarCommonFgColor
-
-	if (player.IsTitan() && GetDoomedState( player )) {
-		color = file.healthbarDoomFgColor
-	}
-
-	Hud_SetColorWithTable( barFill, color )
-
-}
-
 table function GetColorsFromConVar(string conVar) {
 	table color = StringToColors(GetConVarString(conVar))
 
@@ -1767,4 +1810,13 @@ table function GetColorsFromConVar(string conVar) {
 	}
 
 	return StringToColors(GetConVarString(conVar))
+}
+
+bool function IsUseHazardBar()
+{
+	return GetConVarBool("EntityStatus.use_hazard_line")
+}
+
+bool function IsUseHarzardBarDrawcolor() {
+	return GetConVarBool("EntityStatus.use_hazard_line") && GetConVarBool("EntityStatus.use_hazard_line_drawcolor")
 }

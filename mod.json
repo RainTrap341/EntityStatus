@@ -3,7 +3,7 @@
 	"Description": "Ultimate solution for Frontier-Defense gamemode.",
 	"LoadPriority": 3,
 	"RequiredOnClient": false,
-	"Version": "1.5.2",
+	"Version": "1.5.5",
 	"Scripts": [
 		{
 			"Path": "mp_entity_status.gnut",
@@ -40,7 +40,12 @@
 		},
 		{
 			"Name": "EntityStatus.panel_bgcolor",
-			"DefaultValue": "0 0 0",
+			"DefaultValue": "0 0 0 128",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.panel_hollow_bg",
+			"DefaultValue": "1",
 			"Flags": 16777216
 		},
 		{
@@ -83,25 +88,25 @@
 		,
 		{
 			"Name": "EntityStatus.panel_padding_top",
-			"DefaultValue": "100",
+			"DefaultValue": "20",
 			"Flags": 16777216
 		}
 		,
 		{
 			"Name": "EntityStatus.panel_padding_right",
-			"DefaultValue": "50",
+			"DefaultValue": "60",
 			"Flags": 16777216
 		}
 		,
 		{
 			"Name": "EntityStatus.panel_padding_bottom",
-			"DefaultValue": "100",
+			"DefaultValue": "60",
 			"Flags": 16777216
 		}
 		,
 		{
 			"Name": "EntityStatus.panel_padding_left",
-			"DefaultValue": "50",
+			"DefaultValue": "10",
 			"Flags": 16777216
 		},
 
@@ -161,6 +166,21 @@
 		{
 			"Name": "EntityStatus.health_autotitan_fgcolor",
 			"DefaultValue": "161 214 0 255",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.use_hazard_line",
+			"DefaultValue": "1",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.use_hazard_line_drawcolor",
+			"DefaultValue": "1",
+			"Flags": 16777216
+		},
+		{
+			"Name": "EntityStatus.hazard_line_drawcolor",
+			"DefaultValue": "87 151 219 255",
 			"Flags": 16777216
 		}
 

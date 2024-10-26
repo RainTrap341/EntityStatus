@@ -1,5 +1,37 @@
 "Resource/UI/HudEntityStatusBar.res"
 {
+	EntityImageShade
+	{
+		ControlName 			RuiPanel
+		rui 					"ui/basic_image.rpak"
+		basicImage 				"vgui/hud/white"
+
+		wide				52
+		tall				52
+		visible				1
+		scaleImage			1
+		xpos 				-5
+		ypos				10
+		zpos				899
+
+	}
+
+	EntityImageBg
+	{
+		ControlName 			RuiPanel
+		rui 					"ui/basic_image.rpak"
+		basicImage 				"vgui/hud/white"
+
+		wide				52
+		tall				52
+		visible				0
+		scaleImage			1
+		xpos 				-5
+		ypos				10
+		zpos				897
+
+	}
+
 	EntityImage
 	{
 		ControlName 			RuiPanel
@@ -74,37 +106,7 @@
 		zpos				901
 	}
 
-	EntityImageShade
-	{
-		ControlName 			RuiPanel
-		rui 					"ui/basic_image.rpak"
-		basicImage 				"vgui/hud/white"
 
-		wide				52
-		tall				52
-		visible				1
-		scaleImage			1
-		xpos 				-5
-		ypos				10
-		zpos				899
-
-	}
-
-	EntityImageBg
-	{
-		ControlName 			RuiPanel
-		rui 					"ui/basic_image.rpak"
-		basicImage 				"vgui/hud/white"
-
-		wide				52
-		tall				52
-		visible				0
-		scaleImage			1
-		xpos 				-5
-		ypos				10
-		zpos				897
-
-	}
 	//////////////// vanguard ////////////////
 
 	// APEX
@@ -217,6 +219,8 @@
 		//drawColor			"255 255 255 255"
 
 		image 						"vgui/hud/white"
+		// image 						"vgui/hazard_line"
+		
 		drawColor	"87 151 219 160"
 
 		visible						1
@@ -227,6 +231,21 @@
 		pin_to_sibling_corner		BOTTOM_LEFT
 	}
 
+	BarFillHazard
+	{
+		ControlName			CNestedPanel
+		xpos 						0
+		ypos						3
+		zpos						204
+		wide 						195
+		tall 						23
+		visible						1
+
+		pin_to_sibling				EntityTitle
+		pin_corner_to_sibling		TOP_LEFT
+		pin_to_sibling_corner		BOTTOM_LEFT
+		controlSettingsFile		"resource/ui/hazard_line.res"
+	}
 
 
 	BarFillShield
@@ -234,7 +253,7 @@
 		ControlName					ImagePanel
 		xpos 						0
 		ypos						5
-		zpos						204
+		zpos						205
 		wide 						195
 		tall 						2
 		

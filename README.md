@@ -8,8 +8,13 @@
 ///  PS. If you like this, thumbs-up please.
 ```
 
+# Read this carefully before use. Especially [Changelog](#Changelog).
 
 Finally. A HUD mod which helps you watch your teammates in FD. I hope it helps.
+
+
+
+
 
 # Features
 
@@ -20,6 +25,7 @@ This mod supports mod-settings now. It will try to add mod-settings once it find
 It supports `Color Picker` if you installed my mod [ModSettingPlus | Thunderstore - The Northstar Mod Database](https://thunderstore.io/c/northstar/p/Team036/ModSettingPlus/).
 
 ## Basic
+
 - Class/Suit avatar. Titans/Pilots.
 - Health-bar with frac numbers.
 - Colorized. Supports party/local/friend.
@@ -30,6 +36,7 @@ It supports `Color Picker` if you installed my mod [ModSettingPlus | Thunderstor
 - Max to 8 players.
 - ~~Colorful background color.~~ Bad ideas. But I don't remove the code.
 - Show battery on pilot. Amped battery supported.
+
 ## Titan
 
 - Titan Kit2. It shows every player's titan kit2 at the bottom right corner.
@@ -45,17 +52,21 @@ It supports `Color Picker` if you installed my mod [ModSettingPlus | Thunderstor
 
 
 ### Titan-Core
+
 - Core display. Vanguard fully supports.
 
 - Core charge display. 
 
 - Core left-time display. 
+
 ### Monarch/Vanguard
+
 - Upgrades. The 3 base upgrades will show below the bar.
 - Apex Upgrade. ~~Not supported.~~ I need some rest.
 
 
 # Plan
+
 - Ability charge display.
 
 - ~~Change Core-Charge display style.~~
@@ -69,6 +80,7 @@ It supports `Color Picker` if you installed my mod [ModSettingPlus | Thunderstor
   
 
 # Screenshots
+
 If these sreenshots get broken, check them on [Github](https://github.com/RainTrap341/EntityStatus/tree/main/screenshots).
 
 ![1.jpg](https://www.helloimg.com/i/2024/10/06/6702a9ceef435.jpg)
@@ -82,11 +94,14 @@ If these sreenshots get broken, check them on [Github](https://github.com/RainTr
 ![9.jpg](https://www.helloimg.com/i/2024/10/12/670a923ee330a.jpg)
 ![10.jpg](https://www.helloimg.com/i/2024/10/18/6711c0dd50fb0.jpg)
 
-# Changelog
+# <span name="Changelog">Changelog</span>
+
 ## 1.0.0
+
 - Hello World
 
 ## 1.1.0
+
 - Feature. Battery support partly.
 - Feature. Titan building progress.
 - Feature. Monarch Apex-Upgrade.
@@ -97,6 +112,7 @@ If these sreenshots get broken, check them on [Github](https://github.com/RainTr
 - Bugfix. Remove code using unregistered network variable which may cause CTM(Crash To Mainmenu) 
 
 ## 1.2.0
+
 - Feature. Support amped battery.
 - Feature. Show item count on image. Note: Elec-Smoke is local, you are not able to check others'.
 - Feature. Show auto-titan health, and player-on-titan's core-progress on health-bar.
@@ -104,7 +120,7 @@ If these sreenshots get broken, check them on [Github](https://github.com/RainTr
 
 
 - Rework. Core style. Background progress bar. Colorized progress numbers.
-	
+
 - Bugfix. Remove print code.
 - Bugfix. Vanguard get wrong core-icon for next upgrade.  
 
@@ -136,3 +152,16 @@ If these sreenshots get broken, check them on [Github](https://github.com/RainTr
 
 - Rework. Translation Improved.
 - Bugfix. Make color setting like alpha by mistake. 
+
+## 1.5.3
+
+- Feature. Hazard-line doom bar for player-in-titan. Default on. Disable it by modsetting.
+- Feature(Incomplete). Preview in mod-setting menu. Anyway, you can change settings and it applys in time in a match. So this might be useless.
+
+## 1.5.5
+
+- Feature. Custom Panel Background Color.
+- Feature. Padding for panel background.
+- Feature. Custom Hazard-line draw-color.
+
+- Bugfix. Hazard-line draw over shield-bar.
